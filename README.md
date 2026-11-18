@@ -255,12 +255,23 @@ normal tanpa langkah ini.
 Default memakai **penyedia mock** (offline, tanpa biaya) sehingga seluruh alur
 dapat diuji tanpa API key. Untuk memakai API kompatibel OpenAI:
 
-1. Di `.env`:
+1. Di `.env` (atau Environment Variables di platform hosting):
    ```
    LLM_PROVIDER=openai_compatible
    LLM_BASE_URL=https://api.openai.com/v1     # atau penyedia/Ollama lain
    LLM_MODEL=gpt-4o-mini
    LLM_API_KEY=sk-...
+   LLM_ALLOW_EXTERNAL=true
+   ```
+
+Contoh pakai **Gemini gratis** (Google AI Studio - tanpa kartu kredit):
+ambil API key gratis di https://aistudio.google.com/apikey lalu set:
+
+   ```
+   LLM_PROVIDER=openai_compatible
+   LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+   LLM_MODEL=gemini-2.5-flash
+   LLM_API_KEY=<key-dari-ai-studio>
    LLM_ALLOW_EXTERNAL=true
    ```
 2. `LLM_ALLOW_EXTERNAL=false` (default) adalah **pengaman privasi**: data
