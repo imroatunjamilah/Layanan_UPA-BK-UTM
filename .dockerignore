@@ -1,0 +1,13 @@
+# File yang TIDAK ikut ke dalam image Docker.
+venv/
+.git/
+.gitignore
+__pycache__/
+*.py[cod]
+.pytest_cache/
+tests/
+docs/
+*.db
+*.sqlite3
+.env
+.upabk.db
