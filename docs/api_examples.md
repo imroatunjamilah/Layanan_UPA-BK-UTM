@@ -535,3 +535,141 @@ Pembatalan yang perlu tercatat: `PATCH /api/admin/schedule/{id}` dengan
 juga lewat PATCH dan tetap diperiksa bentroknya. Hapus permanen (salah input):
 `DELETE /api/admin/schedule/{id}`.
 
+
+## 23. Melihat Jadwal Bulanan (grid kalender seperti kalender umum, WIB)
+
+Grid 5-6 minggu mulai Senin; hari di luar bulan tetap ikut (`in_month: false`)
+agar tampilan utuh seperti kalender dinding. Navigasi antarbulan lewat parameter
+`month` (format `YYYY-MM`).
+
+```bash
+# bulan berjalan
+curl http://127.0.0.1:8000/api/admin/schedule/month -H "Authorization: Bearer $TOKEN"
+
+# bulan tertentu + filter konselor
+curl "http://127.0.0.1:8000/api/admin/schedule/month?month=2026-11&petugas_id=2" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```json
+{
+  "month": "2026-11",
+  "label": "November 2026",
+  "start": "2026-10-26",
+  "end": "2026-12-06",
+  "hari_ini": "2026-11-18",
+  "total": 4,
+  "total_darurat": 1,
+  "weeks": [
+    {
+      "days": [
+        {
+          "tanggal": "2026-11-18",
+          "hari": "Rabu",
+          "is_today": true,
+          "in_month": true,
+          "items": [
+            {
+              "id": 1,
+              "registration_id": 5,
+              "nama": "Eka Putri Ramadhani",
+              "nim": "2101101005",
+              "petugas": {"id": 1, "nama": "Dra. Ratna Wulandari, M.Psi", "peran": "Konselor Senior"},
+              "tanggal": "2026-11-19",
+              "hari": "Kamis",
+              "jam_mulai": "09:00",
+              "jam_selesai": "10:00",
+              "metode": "Tatap Muka",
+              "lokasi": "Ruang BK 1",
+              "status": "terjadwal",
+              "urgensi": "darurat"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+## 24. Daftar Pengingat (badge lonceng dashboard)
+
+Sesi AKTIF (terjadwal/ditunda) dalam N hari ke depan beserta status pengingat:
+
+- `pengingat_due`      : pengingat yang JATUH TEMPO tapi BELUM terkirim -
+  `h1_hari` bila sesi <= 24 jam lagi, `h1_jam` bila <= 60 menit lagi.
+  Dipakai dashboard untuk badge lonceng + notifikasi browser otomatis (H-1 jam).
+- `pengingat_terkirim` : pengingat yang sudah berhasil dikirim (anti-duplikat).
+- `nomor_wa`           : nomor tujuan valid `62...`; `null` bila kontak
+  mahasiswa/konselor berupa email atau kosong (WA tidak bisa dikirim).
+
+```bash
+curl "http://127.0.0.1:8000/api/admin/schedule/reminders?days=7" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+```json
+{
+  "hari_ini": "2026-11-18",
+  "days_ahead": 7,
+  "total": 4,
+  "total_due": 1,
+  "items": [
+    {
+      "id": 1,
+      "registration_id": 5,
+      "nama": "Eka Putri Ramadhani",
+      "nim": "2101101005",
+      "tanggal": "2026-11-19",
+      "hari": "Kamis",
+      "jam_mulai": "09:00",
+      "jam_selesai": "10:00",
+      "metode": "Tatap Muka",
+      "lokasi": "Ruang BK 1",
+      "status": "terjadwal",
+      "urgensi": "darurat",
+      "hari_tag": "Besok",
+      "selisih_menit": 1116,
+      "waktu_sesi_wib": "2026-11-19T09:00:00+07:00",
+      "pengingat_due": ["h1_hari"],
+      "pengingat_terkirim": [],
+      "nomor_wa": {"mahasiswa": "6281298765432", "petugas": "6281234567890"}
+    }
+  ],
+  "meta": "Pengingat H-1 hari jatuh tempo <= 24 jam sebelum sesi; H-1 jam <= 60 menit. ..."
+}
+```
+
+## 25. Mengirim Pengingat WhatsApp untuk Satu Sesi
+
+Kirim manual oleh admin ke mahasiswa dan/atau konselor. Setiap percobaan
+dicatat pada tabel `schedule_reminders` (audit + anti-duplikat). Isi pesan
+hanya info jadwal (tanggal, jam, metode, lokasi, nama konselor) - TANPA
+keluhan/skor/obrolan. Pada `WA_PROVIDER=mock` pesan hanya dicatat di log
+server (mode demo); set `WA_PROVIDER=fonnte` + `WA_API_TOKEN` untuk kirim nyata.
+
+```bash
+# target: keduanya (default) | mahasiswa | petugas
+# jenis : manual (default) | h1_hari | h1_jam
+curl -X POST http://127.0.0.1:8000/api/admin/schedule/1/remind \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"target": "keduanya", "jenis": "h1_hari"}'
+```
+
+```json
+{
+  "status": "ok",
+  "schedule_id": 1,
+  "hasil": [
+    {"target": "mahasiswa", "status": "terkirim", "nomor": "6281298765432", "keterangan": null},
+    {"target": "petugas", "status": "terkirim", "nomor": "6281234567890", "keterangan": null}
+  ],
+  "meta": "Pada WA_PROVIDER=mock pesan hanya dicatat di log server (mode demo). ..."
+}
+```
+
+Gagal yang mungkin: `404` jadwal tidak ada; `422` target/jenis tidak dikenal,
+sesi bukan `terjadwal`/`ditunda`, atau waktu sesi sudah berlalu. Kontak
+email/kosong TIDAK dihitung gagal kirim jaringan, tetapi dicatat per target
+dengan keterangan "Kontak kosong atau bukan nomor WhatsApp" agar admin tahu
+nomor WA perlu dilengkapi.

@@ -265,6 +265,111 @@ table.data tr.rowlink:hover { background: var(--primary-soft); }
 .wk-status { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
 .wk-item.urg-darurat .wk-status { color: var(--danger); font-weight: 700; }
 
+/* ---------- Toolbar kalender (tab Minggu/Bulan) ---------- */
+.cal-toolbar {
+  display: flex; flex-wrap: wrap; gap: 12px 16px;
+  align-items: flex-end; margin-bottom: 4px;
+}
+.cal-toolbar .cal-filter { min-width: 180px; margin-bottom: 0; }
+.view-tabs {
+  display: inline-flex; border: 1.5px solid var(--primary);
+  border-radius: 10px; overflow: hidden;
+}
+.vt-btn {
+  border: none; background: transparent; color: var(--primary-dark);
+  font: inherit; font-weight: 700; padding: 9px 20px; cursor: pointer;
+}
+.vt-btn.active { background: var(--primary); color: #fff; }
+.cal-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cal-label { font-weight: 600; color: var(--primary-dark); padding: 6px 2px; font-size: 0.92rem; }
+
+/* ---------- Kalender bulanan ---------- */
+.month-grid {
+  display: grid; grid-template-columns: repeat(7, minmax(120px, 1fr));
+  gap: 6px; margin-top: 14px; overflow-x: auto; padding-bottom: 6px;
+}
+.cal-dow {
+  background: var(--primary-soft); color: var(--primary-dark);
+  font-weight: 700; font-size: 0.78rem; text-align: center;
+  padding: 8px 4px; border-radius: 8px;
+}
+.cal-cell {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  min-height: 104px; padding: 6px; display: flex; flex-direction: column; gap: 4px;
+}
+.cal-cell.cal-out { opacity: 0.55; background: var(--surface); }
+.cal-cell.cal-today {
+  border-color: var(--primary); box-shadow: 0 0 0 2px rgba(107, 70, 168, 0.18);
+}
+.cal-date { font-weight: 700; font-size: 0.78rem; color: var(--primary-dark); }
+.cal-cell.cal-out .cal-date { color: var(--muted); font-weight: 500; }
+.cal-items { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.cal-none { color: transparent; font-size: 0.6rem; }
+.cal-chip {
+  border: 1px solid var(--line); border-left: 3px solid var(--muted);
+  border-radius: 6px; background: var(--surface);
+  font-size: 0.7rem; padding: 3px 6px; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: box-shadow 0.15s ease;
+}
+.cal-chip:hover { box-shadow: var(--shadow); }
+.cal-chip.urg-darurat { border-left-color: var(--danger); background: var(--danger-soft); }
+.cal-chip.urg-tinggi { border-left-color: #E8930C; }
+.cal-chip.st-selesai { opacity: 0.65; }
+.cal-chip.st-dibatalkan { opacity: 0.5; text-decoration: line-through; }
+.cal-chip.st-ditunda { border-style: dashed; }
+.cal-chip .cc-time { font-weight: 700; color: var(--primary-dark); margin-right: 4px; }
+.cal-legend {
+  display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem;
+  color: var(--muted); margin-top: 12px; align-items: center;
+}
+.cal-legend .lg {
+  display: inline-block; width: 13px; height: 13px; border-radius: 3px;
+  margin-right: 6px; vertical-align: middle; border: 1px solid var(--line);
+  background: #fff;
+}
+.lg.lg-today { background: var(--primary-soft); border-color: var(--primary); }
+.lg.lg-darurat { background: var(--danger-soft); border-left: 3px solid var(--danger); }
+.lg.lg-tinggi { border-left: 3px solid #E8930C; }
+.lg.lg-normal { border-left: 3px solid var(--muted); }
+
+/* ---------- Pengingat sesi (lonceng dashboard) ---------- */
+.remind-wrap { position: relative; align-self: center; }
+.remind-badge {
+  display: inline-block; min-width: 20px; padding: 1px 7px; margin-left: 6px;
+  border-radius: 999px; background: var(--danger); color: #fff;
+  font-weight: 800; font-size: 0.76rem; text-align: center;
+}
+.remind-panel {
+  position: absolute; right: 0; top: calc(100% + 10px);
+  width: min(440px, 92vw); max-height: 70vh; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  padding: 16px; z-index: 60;
+}
+.remind-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 8px; flex-wrap: wrap; margin-bottom: 6px;
+}
+.remind-head span { color: var(--muted); font-size: 0.8rem; }
+.remind-note { font-size: 0.78rem; color: var(--muted); margin: 0 0 12px; }
+.remind-item {
+  border: 1px solid var(--line); border-left: 4px solid var(--muted);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+  background: var(--bg); font-size: 0.85rem;
+}
+.remind-item.urg-darurat { border-left-color: var(--danger); background: var(--danger-soft); }
+.remind-item.urg-tinggi { border-left-color: #E8930C; }
+.ri-head {
+  display: flex; justify-content: space-between; gap: 8px;
+  align-items: center; flex-wrap: wrap;
+  font-weight: 700; color: var(--primary-dark);
+}
+.ri-body { margin-top: 3px; }
+.ri-badges { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+.ri-act { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.remind-warn { display: block; margin-top: 6px; color: var(--warn); font-size: 0.76rem; }
+
 /* ---------- Antrean prioritas penjadwalan ---------- */
 .queue-summary {
   display: flex; gap: 6px 18px; flex-wrap: wrap; padding: 10px 14px;

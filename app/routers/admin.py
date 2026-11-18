@@ -39,6 +39,7 @@ from ..models import (
     Message,
     Petugas,
     Registration,
+    ScheduleReminder,
     User,
 )
 from ..security import (
@@ -168,6 +169,17 @@ class ScheduleUpdate(BaseModel):
     lokasi: str | None = Field(default=None, max_length=200)
     catatan: str | None = Field(default=None, max_length=2000)
     status: str | None = None
+
+
+class ScheduleRemindPayload(BaseModel):
+    """Kirim pengingat sesi via WhatsApp.
+
+    target : mahasiswa | petugas | keduanya (default keduanya).
+    jenis  : manual (default, dikirim admin) | h1_hari | h1_jam.
+    """
+
+    target: str = Field(default="keduanya", max_length=20)
+    jenis: str = Field(default="manual", max_length=20)
 
 
 class AdminCreate(BaseModel):
@@ -969,6 +981,191 @@ def delete_schedule(
         "JADWAL dihapus (id=%s, reg=%s, oleh=%s).", schedule_id, reg_id, admin.username
     )
     return {"status": "ok", "pesan": "Jadwal dihapus."}
+
+
+@router.get("/schedule/month")
+def schedule_month(
+    month: str | None = Query(
+        default=None, description="YYYY-MM; default bulan berjalan (WIB)"
+    ),
+    petugas_id: int | None = Query(default=None),
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Jadwal satu BULAN sebagai grid kalender (minggu mulai Senin, waktu WIB).
+
+    Mengembalikan 5-6 minggu; hari di luar bulan tetap ikut agar grid kalender
+    utuh seperti kalender umum. Filter `petugas_id` menampilkan sesi satu
+    konselor saja.
+    """
+    today = sched_service.wib_today()
+    if month:
+        try:
+            year_s, mon_s = month.split("-")
+            year, mon = int(year_s), int(mon_s)
+            if not (2000 <= year <= 2100 and 1 <= mon <= 12):
+                raise ValueError
+        except ValueError:
+            raise HTTPException(422, "Format month harus YYYY-MM (contoh: 2025-11).")
+    else:
+        year, mon = today.year, today.month
+
+    start, end = sched_service.month_grid_bounds(year, mon)
+    query = (
+        db.query(Schedule, Followup, Dass21Response)
+        .outerjoin(Followup, Followup.registration_id == Schedule.registration_id)
+        .outerjoin(Dass21Response, Dass21Response.registration_id == Schedule.registration_id)
+        .filter(Schedule.tanggal >= start, Schedule.tanggal <= end)
+    )
+    if petugas_id is not None:
+        query = query.filter(Schedule.petugas_id == petugas_id)
+    rows = query.order_by(Schedule.tanggal.asc(), Schedule.jam_mulai.asc()).all()
+
+    per_day: dict[date, list] = {}
+    total_darurat = 0
+    for sched, followup, dass in rows:
+        urgensi, _ = sched_service.hitung_urgensi(followup, dass)
+        if urgensi == "darurat":
+            total_darurat += 1
+        per_day.setdefault(sched.tanggal, []).append(
+            sched_service.serialize_schedule(sched, followup.status if followup else None, urgensi)
+        )
+
+    weeks = [
+        {
+            "days": [
+                {
+                    "tanggal": d.isoformat(),
+                    "hari": sched_service.HARI_INDONESIA[d.weekday()],
+                    "is_today": d == today,
+                    "in_month": d.month == mon,
+                    "items": per_day.get(d, []),
+                }
+                for d in wk
+            ]
+        }
+        for wk in sched_service.week_rows(start, end)
+    ]
+    return {
+        "month": f"{year:04d}-{mon:02d}",
+        "label": f"{sched_service.NAMA_BULAN[mon - 1]} {year}",
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "hari_ini": today.isoformat(),
+        "total": sum(len(v) for v in per_day.values()),
+        "total_darurat": total_darurat,
+        "weeks": weeks,
+    }
+
+
+@router.get("/schedule/reminders")
+def schedule_reminders(
+    days: int = Query(default=7, ge=1, le=30, description="Jangka hari ke depan"),
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Daftar sesi AKTIF dalam `days` hari ke depan + status pengingatnya.
+
+    - pengingat_due      : jenis pengingat yang JATUH TEMPO tapi BELUM terkirim
+                           (h1_hari bila sesi <= 24 jam lagi; h1_jam bila <= 60
+                           menit lagi). Dipakai untuk badge lonceng dashboard.
+    - pengingat_terkirim : jenis pengingat yang sudah berhasil dikirim.
+    - nomor_wa           : nomor tujuan valid (62...); null bila kontak bukan
+                           nomor WhatsApp sehingga WA tidak bisa dikirim.
+    Notifikasi aplikasi (browser) di dashboard admin muncul otomatis untuk sesi
+    yang masuk masa H-1 jam; WA dikirim manual oleh admin dari panel pengingat.
+    """
+    items = sched_service.upcoming_sessions(db, days_ahead=days)
+    total_due = sum(1 for it in items if it["pengingat_due"])
+    return {
+        "hari_ini": sched_service.wib_today().isoformat(),
+        "days_ahead": days,
+        "total": len(items),
+        "total_due": total_due,
+        "items": items,
+        "meta": (
+            "Pengingat H-1 hari jatuh tempo <= 24 jam sebelum sesi; H-1 jam <= 60 menit. "
+            "Kirim WA dari panel pengingat; seluruh pengiriman tercatat untuk audit."
+        ),
+    }
+
+
+@router.post("/schedule/{schedule_id}/remind")
+def send_schedule_reminder(
+    schedule_id: int,
+    payload: ScheduleRemindPayload,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Kirim pengingat WhatsApp untuk satu sesi (ke mahasiswa dan/atau konselor).
+
+    - Hanya sesi berstatus `terjadwal`/`ditunda` yang belum berlangsung.
+    - Kontak dinormalisasi ke 62...; kontak email/kosong dicatat GAGAL dengan
+      keterangan jelas (tidak diam-diam dilewati).
+    - Setiap percobaan dicatat pada tabel schedule_reminders (audit + anti
+      duplikat). Isi pesan hanya info jadwal - tanpa data sensitif kasus.
+    """
+    sched = db.get(Schedule, schedule_id)
+    if not sched:
+        raise HTTPException(404, "Jadwal tidak ditemukan.")
+    if payload.target not in sched_service.TARGET_PENGINGAT:
+        raise HTTPException(422, "target harus salah satu dari: " + ", ".join(sched_service.TARGET_PENGINGAT) + ".")
+    if payload.jenis not in sched_service.JENIS_PENGINGAT:
+        raise HTTPException(422, "jenis harus salah satu dari: " + ", ".join(sched_service.JENIS_PENGINGAT) + ".")
+    if sched.status not in sched_service.STATUS_AKTIF_JADWAL:
+        raise HTTPException(422, "Pengingat hanya untuk sesi berstatus terjadwal/ditunda.")
+    if sched_service.selisih_menit(sched) <= 0:
+        raise HTTPException(422, "Waktu sesi sudah berlalu; pengingat tidak diperlukan.")
+
+    reg = sched.registration
+    petugas = sched.petugas
+    kandidat: list[tuple[str, str | None]] = []
+    if payload.target in ("mahasiswa", "keduanya"):
+        kandidat.append(("mahasiswa", reg.kontak if reg else None))
+    if payload.target in ("petugas", "keduanya"):
+        kandidat.append(("petugas", petugas.kontak if petugas else None))
+
+    hasil = []
+    for label, raw in kandidat:
+        nomor = wa_service.normalize_wa(raw)
+        if not nomor:
+            db.add(ScheduleReminder(
+                schedule_id=sched.id, jenis=payload.jenis, channel="wa",
+                target=label, nomor_tujuan=None, status="gagal",
+                keterangan="Kontak kosong atau bukan nomor WhatsApp.",
+                created_by=admin.id,
+            ))
+            hasil.append({
+                "target": label, "status": "gagal", "nomor": None,
+                "keterangan": "Kontak kosong atau bukan nomor WhatsApp (mis. email). Isi nomor WA agar pengingat dapat dikirim.",
+            })
+            continue
+        ok = wa_service.send_whatsapp(nomor, sched_service.build_reminder_message(sched, label))
+        db.add(ScheduleReminder(
+            schedule_id=sched.id, jenis=payload.jenis, channel="wa",
+            target=label, nomor_tujuan=nomor,
+            status="terkirim" if ok else "gagal",
+            keterangan=None if ok else "Gateway WhatsApp gagal mengirim (cek WA_PROVIDER/WA_API_TOKEN).",
+            created_by=admin.id,
+        ))
+        hasil.append({
+            "target": label,
+            "status": "terkirim" if ok else "gagal",
+            "nomor": nomor,
+            "keterangan": None if ok else "Gateway WhatsApp gagal mengirim.",
+        })
+
+    db.commit()
+    logger.info(
+        "PENGINGAT dikirim (jadwal=%s, target=%s, jenis=%s, oleh=%s).",
+        schedule_id, payload.target, payload.jenis, admin.username,
+    )
+    return {
+        "status": "ok",
+        "schedule_id": sched.id,
+        "hasil": hasil,
+        "meta": "Pada WA_PROVIDER=mock pesan hanya dicatat di log server (mode demo). Isi nomor WA mahasiswa/konselor agar terkirim nyata.",
+    }
 
 
 # ------------------------------------------------------- manajemen akun admin

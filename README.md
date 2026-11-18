@@ -39,10 +39,20 @@ awal, dan dashboard admin untuk petugas.
 - Statistik agregat (pendaftaran, skrining, obrolan, eskalasi).
 - Daftar mahasiswa: pencarian nama/NIM, filter status/layanan/tanggal,
   **urutan antrean prioritas** (eskalasi krisis paling atas).
-- **Jadwal konseling mingguan**: kalender Senin-Minggu (waktu WIB) berisi sesi
-  konseling terkonfirmasi, navigasi minggu sebelumnya/berikutnya, dan filter per
-  konselor. Berbeda dengan preferensi awal mahasiswa, jadwal di sini adalah
-  keputusan final petugas.
+- **Jadwal konseling kalender (mingguan & bulanan)**: dua tampilan kalender
+  waktu WIB - grid mingguan Senin-Minggu dan **grid bulanan seperti kalender
+  umum** (5-6 minggu, navigasi bulan lalu/ini/depan, hari luar bulan redup,
+  legenda warna). Klik sesi untuk membuka detail kasus; filter per konselor
+  berlaku di kedua tampilan. Berbeda dengan preferensi awal mahasiswa, jadwal
+  di sini adalah keputusan final petugas.
+- **Pengingat sesi (reminder)**: sesi dalam masa H-1 hari (≤ 24 jam) dan
+  H-1 jam (≤ 60 menit) otomatis ditandai pada **lonceng Pengingat** di header
+  dashboard (badge jumlah yang perlu ditindaklanjuti), lengkap dengan
+  **notifikasi browser otomatis** untuk masa H-1 jam. Admin dapat mengirim
+  **pengingat WhatsApp** manual ke mahasiswa dan/atau konselor (isi pesan hanya
+  info jadwal - tanpa data sensitif); setiap pengiriman tercatat pada tabel
+  audit `schedule_reminders` sehingga tidak ada pengiriman ganda. Kontak email
+  dinonaktifkan dengan pesan jelas agar nomor WA dilengkapi.
 - **Antrean penjadwalan prioritas darurat**: kasus eskalasi krisis otomatis tampil
   paling atas, disusul kasus dengan skrining DASS-21 kategori Berat/Sangat Berat,
   lalu yang paling lama menunggu. Sistem hanya MENUSULKAN dan memeriksa bentrok
@@ -87,9 +97,9 @@ upa-bk-utm/
 │   ├── main.py               # Aplikasi FastAPI + frontend statis
 │   ├── config.py             # Pengaturan dari environment
 │   ├── database.py           # Engine & sesi SQLAlchemy
-│   ├── models.py             # 8 tabel: users, petugas, registrations,
+│   ├── models.py             # 9 tabel: users, petugas, registrations,
 │   │                         #   dass21_responses, conversations, messages,
-│   │                         #   followups, schedules
+│   │                         #   followups, schedules, schedule_reminders
 │   ├── security.py           # Hash password PBKDF2, token sesi HMAC, chat token
 │   ├── utils.py
 │   ├── routers/
@@ -97,13 +107,15 @@ upa-bk-utm/
 │   │   ├── dass21.py         # GET questions, POST submit (tanpa skor ke mahasiswa)
 │   │   ├── chat.py           # start/message/history + lapisan keselamatan
 │   │   ├── admin.py          # login, stats, list, detail, followup, petugas,
-│   │   │                     #   penugasan penangani, jadwal mingguan, export CSV
+│   │   │                     #   penugasan penangani, jadwal mingguan & bulanan,
+│   │   │                     #   pengingat sesi (WA), export CSV
 │   │   └── deps.py           # RBAC get_current_admin
 │   ├── services/
 │   │   ├── dass21_questions.py  # 21 pernyataan (terjemahan kerja - validasi UPA BK)
 │   │   ├── dass21_scoring.py    # Penilaian baku x2 + cut-off + versi penilaian
 │   │   ├── crisis.py            # Kata kunci krisis/handoff + pesan keamanan (konfigurasi)
-│   │   ├── scheduling.py        # Antrean prioritas penjadwalan + deteksi bentrok (WIB)
+│   │   ├── scheduling.py        # Antrean prioritas penjadwalan + deteksi bentrok
+│   │   │                        #   + kalender bulanan + pengingat (WIB)
 │   │   ├── options.py
 │   │   └── llm/
 │   │       ├── base.py           # Antarmuka penyedia + jenis error
@@ -117,7 +129,7 @@ upa-bk-utm/
 │   ├── admin-login.html, admin-dashboard.html
 │   ├── css/style.css
 │   └── js/  (registrasi.js, dass21.js, chatbot.js, admin.js)
-├── tests/                    # 113 tes pytest
+├── tests/                    # 119 tes pytest
 │   ├── conftest.py
 │   ├── test_auth.py              # login, token, ganti password, rate limit
 │   ├── test_registrations.py     # validasi + penyimpanan pendaftaran
@@ -126,7 +138,8 @@ upa-bk-utm/
 │   ├── test_chatbot.py           # obrolan, krisis, handoff, penyedia LLM
 │   ├── test_admin_access.py      # RBAC, filter, prioritas, ekspor
 │   ├── test_petugas.py           # kelola petugas + penugasan penangani
-│   ├── test_schedule.py          # jadwal mingguan, antrean darurat, bentrok, RBAC
+│   ├── test_schedule.py          # kalender mingguan & bulanan, antrean darurat,
+│   │                             #   bentrok, pengingat (due/terkirim/WA), RBAC
 │   ├── test_analysis.py          # analisis kasus terpadu (LLM)
 │   └── test_models_storage.py    # FK, unik, cascade, indeks
 └── docs/
@@ -221,7 +234,7 @@ Buka:
 ### 7. Jalankan pengujian (opsional, butuh pytest)
 ```bash
 pip install -r requirements-dev.txt   # sekali saja: menambah pytest
-pytest            # 113 tes: auth, registrasi, scoring DASS-21, DB, akses admin, chatbot, petugas, penjadwalan, analisis
+pytest            # 119 tes: auth, registrasi, scoring DASS-21, DB, akses admin, chatbot, petugas, penjadwalan + kalender + pengingat, analisis
 ```
 Jika pytest gagal terpasang di jaringanmu, aplikasi tetap dapat dijalankan
 normal tanpa langkah ini.
@@ -329,12 +342,12 @@ UPA BK, dan penambahan jejak audit permanen.
 Repo ini siap diunggah: `.gitignore` sudah mengecualikan `.env`, database
 (`*.db`), `venv/`, dan `__pycache__/` sehingga rahasia & data tidak ikut ke
 GitHub. Setiap push/pull request dijalankan otomatis oleh CI
-(`.github/workflows/ci.yml`): seluruh 113 tes pytest harus lulus.
+(`.github/workflows/ci.yml`): seluruh 119 tes pytest harus lulus.
 
 ```bash
 git init
 git add .
-git commit -m "UPA BK UTM: layanan konseling + jadwal mingguan prioritas darurat"
+git commit -m "UPA BK UTM: layanan konseling + kalender mingguan/bulanan prioritas darurat + pengingat"
 
 # buat repo kosong di GitHub (tanpa README), lalu:
 git remote add origin https://github.com/<username>/upa-bk-utm.git
@@ -347,7 +360,7 @@ git push -u origin main
 
 ## Menjalankan dari Clone GitHub (agar login/sandi benar-benar berfungsi)
 
-Sistem sandi sudah diuji 113 tes + alur manual (login benar diterima, login
+Sistem sandi sudah diuji 119 tes + alur manual (login benar diterima, login
 salah ditolak, ganti sandi membuat sandi lama hangus). Agar sandi berfungsi
 benar saat di-deploy, ikuti urutan ini:
 

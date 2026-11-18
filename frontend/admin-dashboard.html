@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Admin - UPA BK UTM</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=3">
+  <link rel="stylesheet" href="/static/css/style.css?v=4">
   <link rel="icon" type="image/jpeg" href="/static/img/logo.jpg">
 </head>
 <body>
@@ -15,6 +15,24 @@
         <div><strong>UPA BK UTM</strong><span>Dashboard Admin</span></div>
       </a>
       <nav class="top-nav">
+        <div class="remind-wrap" id="remind-wrap">
+          <button class="btn ghost small" id="remind-btn" aria-haspopup="true">
+            Pengingat<span class="remind-badge hidden" id="remind-badge">0</span>
+          </button>
+          <div class="remind-panel hidden" id="remind-panel" role="dialog" aria-label="Pengingat sesi konseling">
+            <div class="remind-head">
+              <strong>Pengingat Sesi Konseling</strong>
+              <span>7 hari ke depan (WIB)</span>
+            </div>
+            <p class="remind-note">
+              Sesi dalam masa H-1 hari (&le; 24 jam) atau H-1 jam (&le; 60 menit) ditandai.
+              Notifikasi browser muncul otomatis untuk masa H-1 jam; gunakan tombol
+              di tiap sesi untuk mengirim pengingat WhatsApp ke mahasiswa &amp; konselor.
+            </p>
+            <div id="remind-list"></div>
+            <p id="remind-empty" class="sub hidden">Tidak ada sesi dalam 7 hari ke depan.</p>
+          </div>
+        </div>
         <span id="admin-name" style="align-self:center;color:var(--muted);font-size:0.9rem;"></span>
         <button class="btn ghost small" id="logout-btn">Keluar</button>
       </nav>
@@ -29,36 +47,47 @@
       <div class="stats-grid" id="stats-grid"></div>
     </section>
 
-    <!-- ===================== Jadwal Mingguan ===================== -->
+    <!-- ===================== Jadwal (kalender mingguan & bulanan) ===================== -->
     <section class="card" id="sec-jadwal">
-      <h2 class="section">Jadwal Konseling Mingguan</h2>
+      <h2 class="section">Jadwal Konseling</h2>
       <p class="sub">
         Sesi konseling yang sudah dikonfirmasi (bukan preferensi awal mahasiswa).
         Penanganan darurat diprioritaskan pada antrean di bawah, namun keputusan
         menugaskan konselor tetap di tangan admin.
       </p>
-      <div class="filter-bar">
-        <div class="field" style="align-self:end;">
+      <div class="cal-toolbar">
+        <div class="view-tabs" role="tablist" aria-label="Tampilan kalender">
+          <button class="vt-btn active" id="view-week" type="button">Minggu</button>
+          <button class="vt-btn" id="view-month" type="button">Bulan</button>
+        </div>
+        <div class="cal-nav" id="nav-week">
           <button class="btn ghost small" id="wk-prev">&larr; Minggu lalu</button>
-        </div>
-        <div class="field" style="align-self:end;">
           <button class="btn ghost small" id="wk-today">Minggu ini</button>
-        </div>
-        <div class="field" style="align-self:end;">
           <button class="btn ghost small" id="wk-next">Minggu depan &rarr;</button>
+          <span class="cal-label" id="wk-label">-</span>
         </div>
-        <div class="field">
+        <div class="cal-nav hidden" id="nav-month">
+          <button class="btn ghost small" id="mo-prev">&larr; Bulan lalu</button>
+          <button class="btn ghost small" id="mo-today">Bulan ini</button>
+          <button class="btn ghost small" id="mo-next">Bulan depan &rarr;</button>
+          <span class="cal-label" id="mo-label">-</span>
+        </div>
+        <div class="field cal-filter">
           <label for="wk-petugas">Filter konselor</label>
           <select id="wk-petugas"><option value="">Semua konselor</option></select>
         </div>
-        <div class="field" style="flex:2 1 220px;">
-          <label>Rentang minggu (WIB)</label>
-          <div id="wk-label" style="font-weight:600;color:var(--primary-dark);padding:10px 0;">-</div>
-        </div>
       </div>
       <div id="week-grid" class="week-grid" aria-live="polite"></div>
+      <div id="month-grid" class="month-grid hidden" aria-live="polite"></div>
+      <div id="cal-legend" class="cal-legend hidden">
+        <span><i class="lg lg-today"></i>Hari ini</span>
+        <span><i class="lg lg-darurat"></i>Kasus darurat</span>
+        <span><i class="lg lg-tinggi"></i>DASS-21 berat</span>
+        <span><i class="lg lg-normal"></i>Normal</span>
+        <span>Klik sesi untuk membuka detail kasus</span>
+      </div>
       <p id="wk-empty" class="sub hidden" style="margin-top:10px;">
-        Belum ada sesi pada minggu ini. Gunakan antrean prioritas di bawah untuk menjadwalkan.
+        Belum ada sesi pada periode ini. Gunakan antrean prioritas di bawah untuk menjadwalkan.
       </p>
     </section>
 
@@ -370,6 +399,6 @@
     <div class="inner"><div>UPA BK UTM - Dashboard Admin (prototipe pengembangan)</div></div>
   </footer>
 
-  <script src="/static/js/admin.js?v=4"></script>
+  <script src="/static/js/admin.js?v=5"></script>
 </body>
 </html>

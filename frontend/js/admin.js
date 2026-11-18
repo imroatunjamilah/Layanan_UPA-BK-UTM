@@ -33,8 +33,12 @@
   };
   let page = 1;
   let petugasList = [];
-  let weekAnchor = null; // tanggal acuan (ISO) minggu yang sedang ditampilkan
-  let schedRegId = null; // kasus yang sedang dijadwalkan pada modal
+  let weekAnchor = null;   // tanggal acuan (ISO) minggu yang sedang ditampilkan
+  let monthAnchor = null;  // "YYYY-MM" bulan yang sedang ditampilkan
+  let schedView = "minggu"; // tampilan kalender aktif: minggu | bulan
+  let schedRegId = null;   // kasus yang sedang dijadwalkan pada modal
+  let remindData = null;   // hasil terakhir GET /schedule/reminders
+  const notifiedSesi = new Set(); // sesi yang sudah dinotifikasi browser (H-1 jam)
 
   function escapeHtml(s) {
     return String(s ?? "").replace(/[&<>"']/g, (c) => ({
@@ -211,7 +215,206 @@
   document.getElementById("wk-today").addEventListener("click", () => {
     weekAnchor = wibTodayISO(); loadWeek();
   });
-  document.getElementById("wk-petugas").addEventListener("change", () => loadWeek());
+  document.getElementById("wk-petugas").addEventListener("change", () => {
+    if (schedView === "minggu") loadWeek(); else loadMonth();
+  });
+
+  // ---------- jadwal bulanan (grid kalender WIB) ----------
+  function monthOfISO(iso) { return iso.slice(0, 7); }
+  function shiftMonth(ym, n) {
+    const [y, m] = ym.split("-").map(Number);
+    const d = new Date(Date.UTC(y, m - 1 + n, 1));
+    return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0");
+  }
+
+  async function loadMonth() {
+    const grid = document.getElementById("month-grid");
+    const params = new URLSearchParams();
+    params.set("month", monthAnchor || monthOfISO(wibTodayISO()));
+    const wkP = document.getElementById("wk-petugas").value;
+    if (wkP) params.set("petugas_id", wkP);
+    try {
+      const res = await api("/api/admin/schedule/month?" + params.toString());
+      if (!res.ok) throw new Error((await res.json()).detail || "gagal memuat");
+      const data = await res.json();
+      monthAnchor = data.month;
+      document.getElementById("mo-label").textContent =
+        `${data.label} - ${data.total} sesi` +
+        (data.total_darurat > 0 ? ` - ${data.total_darurat} kasus DARURAT` : "");
+      renderMonth(data);
+    } catch (e) {
+      grid.innerHTML = `<p class="sub">Gagal memuat kalender: ${escapeHtml(e.message)}</p>`;
+    }
+  }
+
+  function renderMonth(data) {
+    const grid = document.getElementById("month-grid");
+    const dow = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+      .map((h) => `<div class="cal-dow">${h}</div>`).join("");
+    const weeksHtml = data.weeks.map((wk) => wk.days.map((d) => {
+      const chips = d.items.map((it) => `
+        <div class="cal-chip urg-${escapeHtml(it.urgensi || "normal")} st-${escapeHtml(it.status)}"
+             data-reg="${it.registration_id}" title="${escapeHtml(
+               `${it.jam_mulai}-${it.jam_selesai} WIB - ${it.nama || "-"} (${it.petugas ? it.petugas.nama : "tanpa konselor"}) - ${it.metode}`
+             )}">
+          <span class="cc-time">${escapeHtml(it.jam_mulai)}</span>
+          <span class="cc-nama">${escapeHtml(it.nama || "-")}</span>
+        </div>`).join("");
+      return `
+        <div class="cal-cell${d.is_today ? " cal-today" : ""}${d.in_month ? "" : " cal-out"}"
+             data-tanggal="${d.tanggal}">
+          <div class="cal-date">${d.tanggal.slice(8)}</div>
+          <div class="cal-items">${chips || (d.items.length ? chips : '<span class="cal-none">&nbsp;</span>')}</div>
+        </div>`;
+    }).join("")).join("");
+    grid.innerHTML = dow + weeksHtml;
+    grid.querySelectorAll(".cal-chip").forEach((el) => {
+      el.addEventListener("click", () => openDetail(Number(el.dataset.reg)));
+    });
+  }
+
+  function setView(v) {
+    schedView = v;
+    document.getElementById("view-week").classList.toggle("active", v === "minggu");
+    document.getElementById("view-month").classList.toggle("active", v === "bulan");
+    document.getElementById("nav-week").classList.toggle("hidden", v !== "minggu");
+    document.getElementById("nav-month").classList.toggle("hidden", v !== "bulan");
+    document.getElementById("week-grid").classList.toggle("hidden", v !== "minggu");
+    document.getElementById("month-grid").classList.toggle("hidden", v !== "bulan");
+    document.getElementById("cal-legend").classList.toggle("hidden", v !== "bulan");
+    if (v === "minggu") { loadWeek(); }
+    else {
+      document.getElementById("wk-empty").classList.add("hidden");
+      loadMonth();
+    }
+  }
+  document.getElementById("view-week").addEventListener("click", () => setView("minggu"));
+  document.getElementById("view-month").addEventListener("click", () => setView("bulan"));
+
+  document.getElementById("mo-prev").addEventListener("click", () => {
+    monthAnchor = shiftMonth(monthAnchor || monthOfISO(wibTodayISO()), -1); loadMonth();
+  });
+  document.getElementById("mo-next").addEventListener("click", () => {
+    monthAnchor = shiftMonth(monthAnchor || monthOfISO(wibTodayISO()), 1); loadMonth();
+  });
+  document.getElementById("mo-today").addEventListener("click", () => {
+    monthAnchor = monthOfISO(wibTodayISO()); loadMonth();
+  });
+
+  // ---------- pengingat sesi (lonceng dashboard) ----------
+  const PENGINGAT_LABEL = {
+    h1_hari: "H-1 hari", h1_jam: "H-1 jam", manual: "WA manual",
+  };
+
+  async function loadReminders() {
+    try {
+      const res = await api("/api/admin/schedule/reminders?days=7");
+      if (!res.ok) return;
+      remindData = await res.json();
+      renderReminders();
+    } catch (e) { /* coba lagi pada poll berikutnya */ }
+  }
+
+  function renderReminders() {
+    if (!remindData) return;
+    const badge = document.getElementById("remind-badge");
+    const list = document.getElementById("remind-list");
+    const empty = document.getElementById("remind-empty");
+    badge.textContent = remindData.total_due;
+    badge.classList.toggle("hidden", remindData.total_due === 0);
+    empty.classList.toggle("hidden", remindData.total > 0);
+    list.innerHTML = remindData.items.map((it) => {
+      const dueBadges = (it.pengingat_due || []).map((j) =>
+        `<span class="badge ${j === "h1_jam" ? "st-urgent" : "st-menunggu"}">Perlu pengingat ${PENGINGAT_LABEL[j] || j}</span>`).join(" ");
+      const sentBadges = (it.pengingat_terkirim || []).map((j) =>
+        `<span class="badge st-selesai">WA terkirim (${PENGINGAT_LABEL[j] || j})</span>`).join(" ");
+      const waMhsOk = Boolean(it.nomor_wa && it.nomor_wa.mahasiswa);
+      const warna = waMhsOk ? "" :
+        `<span class="remind-warn">WA mahasiswa belum bisa: kontak terdaftar email/kosong - lengkapi nomor di data pendaftaran.</span>`;
+      return `
+      <div class="remind-item urg-${escapeHtml(it.urgensi || "normal")}" data-sid="${it.id}">
+        <div class="ri-head">
+          <span class="ri-when">${escapeHtml(it.hari_tag)} - ${fmtTanggalID(it.tanggal)}, ${escapeHtml(it.jam_mulai)} WIB</span>
+          ${URGENSI_BADGE[it.urgensi] || ""}
+        </div>
+        <div class="ri-body"><strong>${escapeHtml(it.nama || "-")}</strong> (${escapeHtml(it.nim || "-")})
+          - Konselor: ${it.petugas ? escapeHtml(it.petugas.nama) : "-"}
+          - ${escapeHtml(it.metode)}${it.lokasi ? " - " + escapeHtml(it.lokasi) : ""}</div>
+        <div class="ri-badges">${dueBadges} ${sentBadges}</div>
+        <div class="ri-act">
+          <button class="btn small" data-remind="${it.id}">Kirim WA pengingat</button>
+          <button class="btn ghost small" data-open="${it.registration_id}">Detail kasus</button>
+        </div>
+        ${warna}
+      </div>`;
+    }).join("");
+
+    list.querySelectorAll("button[data-remind]").forEach((btn) => {
+      btn.addEventListener("click", () => sendReminder(Number(btn.dataset.remind), btn));
+    });
+    list.querySelectorAll("button[data-open]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.getElementById("remind-panel").classList.add("hidden");
+        openDetail(Number(btn.dataset.open));
+      });
+    });
+    maybeNotify();
+  }
+
+  async function sendReminder(sid, btn) {
+    btn.disabled = true; btn.textContent = "Mengirim...";
+    try {
+      const r = await api(`/api/admin/schedule/${sid}/remind`, {
+        method: "POST",
+        body: JSON.stringify({ target: "keduanya", jenis: "manual" }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail || "Gagal mengirim pengingat.");
+      const gagal = (data.hasil || []).filter((h) => h.status === "gagal");
+      if (gagal.length) {
+        alert("Sebagian pengingat gagal dikirim:\n" +
+          gagal.map((h) => `- ${h.target}: ${h.keterangan || "-"}`).join("\n") +
+          "\n\nCatatan: mode demo (WA_PROVIDER=mock) hanya mencatat pesan di log server.");
+      } else {
+        alert("Pengingat WhatsApp terkirim ke mahasiswa dan konselor.");
+      }
+      loadReminders();
+    } catch (e) {
+      alert("Gagal: " + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "Kirim WA pengingat";
+    }
+  }
+
+  function maybeNotify() {
+    if (!("Notification" in window) || !remindData) return;
+    remindData.items.forEach((it) => {
+      if ((it.pengingat_due || []).includes("h1_jam") && !notifiedSesi.has(it.id)) {
+        notifiedSesi.add(it.id);
+        if (Notification.permission === "granted") {
+          new Notification("Pengingat sesi konseling (<= 1 jam)", {
+            body: `${it.nama || "-"} - ${it.hari_tag} pukul ${it.jam_mulai} WIB (${it.metode}).`,
+          });
+        }
+      }
+    });
+  }
+
+  document.getElementById("remind-btn").addEventListener("click", () => {
+    const panel = document.getElementById("remind-panel");
+    panel.classList.toggle("hidden");
+    if (!panel.classList.contains("hidden") && "Notification" in window
+        && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  });
+  document.addEventListener("click", (e) => {
+    const wrap = document.getElementById("remind-wrap");
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById("remind-panel").classList.add("hidden");
+    }
+  });
+  setInterval(loadReminders, 60000); // periksa pengingat tiap 1 menit
 
   // ---------- antrean prioritas penjadwalan ----------
   async function loadQueue() {
@@ -326,8 +529,8 @@
         const err = await res.json();
         throw new Error(err.detail || "Gagal menyimpan jadwal.");
       }
-      setMsg(msg, "Jadwal tersimpan dan tampil pada kalender mingguan.", "ok");
-      loadWeek(); loadQueue(); loadList(); loadStats();
+      setMsg(msg, "Jadwal tersimpan dan tampil pada kalender.", "ok");
+      loadWeek(); loadMonth(); loadQueue(); loadList(); loadStats();
       setTimeout(() => schedBackdrop.classList.add("hidden"), 800);
     } catch (err) { setMsg(msg, "Gagal: " + err.message, "err"); }
   });
@@ -769,7 +972,7 @@
 
   function renderJadwalList(d) {
     const items = d.jadwal || [];
-    if (!items.length) return `<p class="sub">Belum ada sesi terkonfirmasi. Gunakan tombol di bawah untuk menjadwalkan.</p>`;
+    if (!items.length) return `<p class="sub">Belum ada sesi dikonfirmasi. Gunakan tombol di bawah untuk menjadwalkan.</p>`;
     return `<div class="jadwal-list">${items.map((j) => `
       <div class="jadwal-row st-${escapeHtml(j.status)}">
         <div>
@@ -781,6 +984,7 @@
         </div>
         <div class="jadwal-act">
           ${j.status === "terjadwal" || j.status === "ditunda" ? `
+            <button class="btn ghost small" data-js="remind" data-id="${j.id}">Kirim WA pengingat</button>
             <button class="btn ghost small" data-js="selesai" data-id="${j.id}">Tandai selesai</button>
             <button class="btn ghost small" data-js="batal" data-id="${j.id}">Batalkan</button>
             <button class="btn danger small" data-js="hapus" data-id="${j.id}">Hapus</button>`
@@ -798,7 +1002,21 @@
         const id = Number(btn.dataset.id);
         const act = btn.dataset.js;
         try {
-          if (act === "hapus") {
+          if (act === "remind") {
+            const r = await api(`/api/admin/schedule/${id}/remind`, {
+              method: "POST",
+              body: JSON.stringify({ target: "keduanya", jenis: "manual" }),
+            });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.detail || "Gagal mengirim pengingat.");
+            const gagal = (data.hasil || []).filter((h) => h.status === "gagal");
+            if (gagal.length) {
+              alert("Sebagian pengingat gagal dikirim:\n" +
+                gagal.map((h) => `- ${h.target}: ${h.keterangan || "-"}`).join("\n"));
+            } else {
+              alert("Pengingat WhatsApp terkirim ke mahasiswa dan konselor.");
+            }
+          } else if (act === "hapus") {
             if (!confirm("Hapus permanen jadwal ini? Gunakan 'Batalkan' bila ingin tercatat.")) return;
             const r = await api(`/api/admin/schedule/${id}`, { method: "DELETE" });
             if (!r.ok) throw new Error((await r.json()).detail || "Gagal.");
@@ -810,7 +1028,7 @@
             if (!r.ok) throw new Error((await r.json()).detail || "Gagal.");
           }
           await openDetail(d.id);
-          loadWeek(); loadQueue(); loadList(); loadStats();
+          loadWeek(); loadMonth(); loadQueue(); loadList(); loadStats(); loadReminders();
         } catch (err) { alert("Gagal: " + err.message); }
       });
     });
@@ -983,4 +1201,5 @@
   weekAnchor = wibTodayISO();
   loadWeek();
   loadQueue();
+  loadReminders();
 })();

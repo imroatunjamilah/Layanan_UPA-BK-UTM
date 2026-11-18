@@ -154,23 +154,34 @@ desain sengaja disederhanakan demi pengembangan cepat dan pengujian tanpa biaya.
 - [ ] Uji beban ringan untuk skenario pendaftaran massal.
 - [ ] Uji manual skenario krisis bersama stres kasus yang disepakati.
 
-### F. Penjadwalan (fitur jadwal mingguan)
+### F. Penjadwalan (kalender mingguan & bulanan + pengingat)
 
-Yang SUDAH ada: kalender mingguan WIB (Senin-Minggu), antrean prioritas
-darurat (krisis paling atas, lalu DASS-21 Berat/Sangat Berat, lalu paling lama
-menunggu), penugasan konselor manual oleh admin, deteksi bentrok slot konselor,
-dan status sesi (terjadwal/selesai/dibatalkan/ditunda).
+Yang SUDAH ada: kalender mingguan WIB (Senin-Minggu) DAN tampilan kalender
+bulanan (grid seperti kalender umum, navigasi antarbulan, filter konselor),
+antrean prioritas darurat (krisis paling atas, lalu DASS-21
+Berat/Sangat Berat, lalu paling lama menunggu), penugasan konselor manual oleh
+admin, deteksi bentrok slot konselor, status sesi
+(terjadwal/selesai/dibatalkan/ditunda), serta **pengingat sesi**: badge lonceng
+dashboard (pengingat H-1 hari <= 24 jam dan H-1 jam <= 60 menit), notifikasi
+browser otomatis untuk masa H-1 jam, dan pengiriman pengingat WhatsApp manual
+ke mahasiswa/konselor yang tercatat pada tabel `schedule_reminders` (audit +
+anti-duplikat).
 
 Batasan saat ini (belum ada, perlu keputusan/kebutuhan UPA BK):
 
 - [ ] Belum ada konfigurasi jam kerja/availabilitas per konselor (slot manual
       penuh oleh admin; sistem hanya mencegah tumpang tindih).
-- [ ] Belum ada notifikasi ke mahasiswa saat jadwal dibuat/diubah (mis. via
-      WhatsApp gateway).
+- [ ] Pengingat WhatsApp masih dikirim MANUAL oleh admin (tidak ada penjadwal
+      latar yang mengirim otomatis saat pengingat jatuh tempo; notifikasi
+      otomatis hanya di browser admin yang sedang terbuka). Untuk otomatis
+      penuh, jalankan worker cron yang memanggil
+      `POST /api/admin/schedule/{id}/remind`.
+- [ ] Belum ada notifikasi otomatis ke mahasiswa SAAT jadwal dibuat/diubah
+      (pengingat dikirim terpisah dari panel pengingat).
 - [ ] Belum ada jadwal berulang (mis. "setiap Selasa 10.00 selama 4 sesi").
 - [ ] Mahasiswa belum bisa melihat/mengonfirmasi jadwalnya sendiri.
-- [ ] Riwayat perubahan jadwal belum disimpan sebagai audit trail permanen
-      (hanya log aplikasi).
+- [ ] Audit pengingat (`schedule_reminders`) mencatat pengiriman, tetapi
+      riwayat perubahan jadwal sendiri masih hanya log aplikasi.
 
 ---
 

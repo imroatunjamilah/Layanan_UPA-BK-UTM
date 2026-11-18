@@ -1,8 +1,8 @@
 """Model database UPA BK UTM.
 
-Delapan tabel:
+Sembilan tabel:
   users, petugas, registrations, dass21_responses, conversations, messages,
-  followups, schedules
+  followups, schedules, schedule_reminders
 
 Kolom waktu disimpan sebagai UTC naive; serialisasi API menambahkan penanda 'Z'
 (lihat app.utils.iso_utc) sehingga klien bisa menampilkannya di zona waktu lokal
@@ -250,4 +250,39 @@ class Schedule(Base):
 
     registration = relationship("Registration", back_populates="schedules")
     petugas = relationship("Petugas")
+    creator = relationship("User")
+
+
+class ScheduleReminder(Base):
+    """Catatan pengiriman pengingat sesi konseling (audit + anti-duplikat).
+
+    Satu baris per pengiriman pengingat:
+    - jenis   : "h1_hari" (H-1 hari / <= 24 jam sebelum sesi) | "h1_jam"
+                (H-1 jam / <= 60 menit sebelum sesi) | "manual" (dikirim admin).
+    - channel : "wa" (WhatsApp via gateway) - notifikasi aplikasi (browser)
+                tidak dicatat karena hanya hidup di perangkat admin.
+    - target  : label penerima ("mahasiswa" | "petugas") + nomor normalized.
+    - status  : "terkirim" | "gagal" (keterangan alasan di kolom `keterangan`).
+
+    Prinsip privasi: isi pesan pengingat HANYA jadwal (tanggal, jam, metode,
+    lokasi, nama konselor) - TIDAK pernah memuat keluhan, skor, atau obrolan.
+    """
+
+    __tablename__ = "schedule_reminders"
+
+    id = Column(Integer, primary_key=True)
+    schedule_id = Column(
+        Integer, ForeignKey("schedules.id"), nullable=False, index=True
+    )
+    jenis = Column(String(20), nullable=False, default="manual")  # h1_hari | h1_jam | manual
+    channel = Column(String(20), nullable=False, default="wa")    # wa
+    target = Column(String(20), nullable=False)                   # mahasiswa | petugas
+    nomor_tujuan = Column(String(30), nullable=True)              # 62... (dinormalisasi)
+    status = Column(String(20), nullable=False, default="terkirim")  # terkirim | gagal
+    keterangan = Column(Text, nullable=True)
+    sent_at = Column(DateTime, nullable=False, default=utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+
+    schedule = relationship("Schedule")
     creator = relationship("User")
