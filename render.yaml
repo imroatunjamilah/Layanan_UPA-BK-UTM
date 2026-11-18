@@ -1,0 +1,34 @@
+# Blueprint Render — deploy otomatis satu klik untuk Layanan UPA-BK UTM.
+#
+# Pemakaian di Render:
+#   New -> Blueprint -> pilih repo Layanan_UPA-BK-UTM.
+#   Render akan membaca file ini dan hanya menanyakan nilai ADMIN_USERNAME
+#   dan ADMIN_PASSWORD (isi username & sandi admin pilihan Anda).
+#
+# Dokumentasi: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: layanan-upa-bk-utm
+    runtime: python
+    plan: free
+    healthCheckPath: /api/health
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+      - key: APP_ENV
+        value: production
+      # Kunci sesi/login: dibuat acak otomatis oleh Render.
+      - key: SECRET_KEY
+        generateValue: true
+      # Diisi Anda saat pertama deploy (muncul form Render).
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Integrasi opsional: default mode mock (aman untuk demo).
+      - key: WA_PROVIDER
+        value: mock
+      - key: LLM_PROVIDER
+        value: mock

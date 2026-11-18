@@ -2,8 +2,8 @@
 
 - Semua API berada di bawah /api (diaktifkan routers).
 - Frontend statis (Bahasa Indonesia) dilayani dari folder frontend/ di root.
-- Saat startup: database & tabel dibuat otomatis; pada mode development,
-  akun admin awal dibuat bila belum ada (kredensial dari env, wajib diganti).
+- Saat startup: database & tabel dibuat otomatis; akun admin awal dibuat bila
+  belum ada user sama sekali (kredensial dari env, wajib diganti).
 """
 import logging
 from contextlib import asynccontextmanager
@@ -30,26 +30,47 @@ FRONTEND_DIR = settings.BASE_DIR / "frontend"
 PAGES = ["index", "registrasi", "dass21", "chatbot", "admin-login", "admin-dashboard"]
 
 
-def _ensure_dev_admin() -> None:
-    """Membuat akun admin pengembangan bila belum ada user sama sekali (dev only)."""
-    if settings.APP_ENV != "development":
-        return
+def _ensure_bootstrap_admin() -> None:
+    """Membuat akun admin awal bila belum ada user sama sekali.
+
+    Idempoten (aman dijalankan berulang) dan berlaku di lingkungan mana pun,
+    sehingga deployment baru (mis. Render) langsung punya akun admin tanpa
+    perlu akses shell.
+
+    - APP_ENV development/test : pakai default admin/admin123 bila env kosong.
+    - APP_ENV production       : wajib isi ADMIN_USERNAME & ADMIN_PASSWORD lewat
+      environment; bila kosong/masih default, akun TIDAK dibuat demi keamanan
+      (jangan pernah pakai sandi default di internet) dan aplikasi mencatat
+      peringatan di log.
+    """
     db = SessionLocal()
     try:
-        if db.query(User).count() == 0:
-            db.add(User(
-                username=settings.ADMIN_USERNAME,
-                password_hash=hash_password(settings.ADMIN_PASSWORD),
-                role="admin",
-                nama_lengkap="Administrator Utama",
-                is_active=True,
-            ))
-            db.commit()
+        if db.query(User).count() > 0:
+            return
+        username = settings.ADMIN_USERNAME
+        password = settings.ADMIN_PASSWORD
+        produksi = settings.APP_ENV == "production"
+        if produksi and (not password or password == "admin123"):
             logger.warning(
-                "Akun admin pengembangan dibuat (username=%s). SEGERA ganti sandi lewat "
-                "PATCH /api/admin/password atau python create_admin.py!",
-                settings.ADMIN_USERNAME,
+                "APP_ENV=production tetapi ADMIN_PASSWORD belum diisi lewat Environment. "
+                "Akun admin TIDAK dibuat demi keamanan. Isi ADMIN_USERNAME & "
+                "ADMIN_PASSWORD di dashboard Render (Web Service -> Environment) "
+                "lalu klik Manual Deploy / Restart.",
             )
+            return
+        db.add(User(
+            username=username,
+            password_hash=hash_password(password),
+            role="admin",
+            nama_lengkap="Administrator Utama",
+            is_active=True,
+        ))
+        db.commit()
+        logger.warning(
+            "Akun admin awal dibuat (username=%s). SEGERA ganti sandi lewat menu "
+            "Ganti Sandi di dashboard admin!",
+            username,
+        )
     finally:
         db.close()
 
@@ -59,7 +80,7 @@ def create_app(init_db_on_start: bool = True) -> FastAPI:
     async def lifespan(_app: FastAPI):
         if init_db_on_start:
             init_db()
-            _ensure_dev_admin()
+            _ensure_bootstrap_admin()
             logger.info("Database siap: %s", settings.DATABASE_URL)
         yield
 
