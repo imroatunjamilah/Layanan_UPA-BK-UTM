@@ -410,3 +410,28 @@ Gejala umum & solusi cepat:
 | OTP tidak terkirim | Gateway WhatsApp belum dikonfigurasi | Set `WA_PROVIDER=fonnte` + `WA_API_TOKEN` (mode non-produksi menampilkan `debug_code`) |
 | Tabel lama tidak punya kolom baru | Database lama dari versi sebelumnya | `python init_db.py` menjalankan migrasi ringan otomatis saat startup |
 
+## Deploy ke Internet Gratis (FastAPI Cloud)
+
+Cara termudah menempelkan aplikasi ke internet tanpa kartu kredit:
+[FastAPI Cloud](https://fastapicloud.com) - hosting resmi dari pembuat
+FastAPI. Paket Hobby gratis, dan **setiap `git push` ke branch `main`
+otomatis deploy ulang**.
+
+1. Daftar di https://fastapicloud.com (cukup email / akun GitHub).
+2. Dashboard -> tim Anda -> **Create new app** -> pilih **GitHub Repo** ->
+   sambungkan GitHub dan pilih repository ini -> **Create App**.
+3. Di halaman aplikasi, isi **Environment Variables** (wajib):
+   `APP_ENV=production`, `SECRET_KEY` (string acak panjang),
+   `ADMIN_USERNAME`, `ADMIN_PASSWORD` (sandi kuat).
+   Akun admin pertama dibuat otomatis saat aplikasi start bila database
+   masih kosong.
+4. Aplikasi online di `https://<nama-app>.fastapicloud.dev`; halaman admin
+   di `/admin-login.html`.
+
+Catatan paket gratis: penyimpanan sementara (data terhapus saat rebuild/
+restart - cocok untuk demo/uji coba), dan aplikasi scale-to-zero ketika
+idle. Untuk pemakaian nyata jangka panjang, gunakan database eksternal
+(PostgreSQL) atau paket berbayar dengan persistent disk. File `Dockerfile`
+di repo juga siap untuk platform Docker lain (mis. Hugging Face Spaces,
+sekarang berbayar).
+
