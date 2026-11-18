@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruang Obrolan - UPA BK UTM</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=2">
+  <link rel="icon" type="image/jpeg" href="/static/img/logo.jpg">
+</head>
+<body>
+  <header class="site-header">
+    <div class="inner">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/img/logo.jpg" alt="Logo UPA BK UTM">
+        <div><strong>UPA BK UTM</strong><span>Ruang Obrolan</span></div>
+      </a>
+      <nav class="top-nav"><a href="/">Beranda</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="chat-shell">
+      <div id="need-register" class="card hidden">
+        <div class="banner warn">
+          <strong>Ruang obrolan membutuhkan pendaftaran &amp; skrining.</strong>
+          Silakan selesaikan pendaftaran dan skrining DASS-21 terlebih dahulu.
+        </div>
+        <div class="actions-row">
+          <a class="btn" href="/registrasi.html">Daftar Layanan</a>
+          <a class="btn ghost" href="/dass21.html">Isi Skrining</a>
+        </div>
+      </div>
+
+      <div id="chat-wrapper" class="hidden">
+        <h2 class="section">Ruang Obrolan UPA BK</h2>
+        <p class="sub">Ceritakan apa yang Anda rasakan. Anda dapat meminta pendampingan konselor kapan saja.</p>
+
+        <div id="crisis-banner" class="banner danger hidden">
+          <strong>Situasi Anda penting.</strong>
+          Jika Anda atau orang di sekitar Anda dalam bahaya segera: hubungi
+          <strong>112</strong> (darurat nasional, 24 jam) atau <strong>119 ext. 8</strong>
+          (layanan Sejiwa), serta datang/hubungi UPA BK UTM. Anda tidak sendirian.
+        </div>
+
+        <div class="chat-box">
+          <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
+          <div class="chat-input">
+            <textarea id="chat-text" maxlength="2000"
+              placeholder="Tulis pesan Anda di sini..." aria-label="Pesan"></textarea>
+            <button class="btn" id="send-btn">Kirim</button>
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn ghost small" id="handoff-btn">Minta pendampingan konselor/petugas</button>
+        </div>
+
+        <p class="chat-footer" id="disclaimer-text">
+          Asisten obrolan ini membantu mendengarkan dan memberi dukungan awal, namun
+          <strong>bukan pengganti konseling profesional</strong>.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner"><div>UPA BK UTM - Layanan Konseling Mahasiswa (prototipe pengembangan)</div></div>
+  </footer>
+
+  <script src="/static/js/chatbot.js"></script>
+</body>
+</html>

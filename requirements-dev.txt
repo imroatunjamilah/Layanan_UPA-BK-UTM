@@ -1,0 +1,5 @@
+# Dependensi PENGEMBANGAN (hanya untuk menjalankan test suite pytest).
+# Aplikasi tetap berjalan tanpa file ini.
+# Instal:  pip install -r requirements-dev.txt
+-r requirements.txt
+pytest>=8.0

@@ -1,0 +1,320 @@
+/* ============================================================
+   UPA BK UTM - Gaya visual (ungu psikologis, tenang, bersih)
+   ============================================================ */
+:root {
+  --bg: #FAF7FD;
+  --surface: #FFFFFF;
+  --ink: #2B2340;
+  --muted: #77708A;
+  --line: #E9E2F3;
+  --primary: #6B46A8;
+  --primary-dark: #52307F;
+  --primary-soft: #F0EAFA;
+  --accent: #B0327E;
+  --accent-dark: #8F2565;
+  --accent-soft: #FAE8F2;
+  --danger: #C0392B;
+  --danger-soft: #FBE9E7;
+  --ok: #2E7D32;
+  --ok-soft: #E8F5E9;
+  --info: #1F6F9C;
+  --info-soft: #E3F0F7;
+  --warn: #B26A00;
+  --warn-soft: #FFF3E0;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(43, 35, 64, 0.08);
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main { flex: 1; width: min(1080px, 94%); margin: 0 auto; padding: 28px 0 48px; }
+
+/* ---------- Header ---------- */
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 20;
+}
+.site-header .inner {
+  width: min(1080px, 94%); margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; gap: 16px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+.brand-logo {
+  width: 46px; height: 46px; border-radius: 10px; object-fit: cover;
+  border: 1px solid var(--line); background: #fff; flex-shrink: 0;
+}
+.brand strong { display: block; font-size: 1.02rem; }
+.brand span { display: block; font-size: 0.78rem; color: var(--muted); }
+nav.top-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+nav.top-nav a {
+  text-decoration: none; color: var(--primary-dark);
+  padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: 0.92rem;
+}
+nav.top-nav a:hover { background: var(--primary-soft); }
+
+/* ---------- Hero & kartu ---------- */
+.hero {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff; border-radius: var(--radius); padding: 40px 36px; margin-bottom: 28px;
+}
+.hero h1 { margin: 0 0 10px; font-size: 1.7rem; line-height: 1.3; }
+.hero p { margin: 0 0 18px; max-width: 640px; color: #EADFF8; }
+.hero .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 24px; margin-bottom: 20px;
+}
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.step-card h3 { margin-top: 0; color: var(--primary-dark); }
+.step-card p { color: var(--muted); font-size: 0.95rem; }
+.step-num {
+  display: inline-flex; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent-dark);
+  align-items: center; justify-content: center; font-weight: 700; margin-bottom: 10px;
+}
+
+main a:not(.btn) { color: var(--primary); }
+h2.section { font-size: 1.3rem; margin: 0 0 6px; }
+p.sub { color: var(--muted); margin: 0 0 20px; }
+
+/* Pesan status form: harus mencolok agar tidak dianggap tombol mati */
+.form-msg {
+  margin: 10px 0 0; font-size: 0.95rem; font-weight: 600;
+  padding: 8px 12px; border-radius: 8px; display: none;
+}
+.form-msg.show { display: block; }
+.form-msg.err { background: var(--danger-soft); color: var(--danger); border: 1px solid #E57368; }
+.form-msg.ok { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+.form-msg.info { background: var(--primary-soft); color: var(--primary-dark); border: 1px solid var(--line); }
+
+/* ---------- Form ---------- */
+.field { margin-bottom: 16px; }
+.field label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.94rem; }
+.field .hint { font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+input[type="text"], input[type="email"], select, textarea {
+  width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: #fff; font: inherit; color: var(--ink);
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary);
+}
+textarea { min-height: 110px; resize: vertical; }
+.checkbox-row { display: flex; gap: 10px; align-items: flex-start; }
+.checkbox-row input { margin-top: 5px; }
+.checkbox-row label { font-weight: 400; font-size: 0.9rem; color: var(--ink); }
+
+.btn {
+  display: inline-block; border: none; cursor: pointer; text-decoration: none;
+  background: var(--primary); color: #fff; font: inherit; font-weight: 700;
+  padding: 12px 22px; border-radius: 10px; transition: background 0.15s ease;
+  text-align: center;
+}
+.btn:hover { background: var(--primary-dark); }
+.btn.accent { background: var(--accent); }
+.btn.accent:hover { background: var(--accent-dark); }
+.btn.ghost { background: transparent; color: var(--primary-dark); border: 1.5px solid var(--primary); }
+.btn.ghost:hover { background: var(--primary-soft); }
+.btn.small { padding: 8px 14px; font-size: 0.88rem; }
+.btn.danger { background: var(--danger); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.actions-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+
+/* ---------- Panel status / banner ---------- */
+.banner { border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; font-size: 0.93rem; }
+.banner.info { background: var(--info-soft); color: var(--info); }
+.banner.warn { background: var(--warn-soft); color: var(--warn); }
+.banner.ok { background: var(--ok-soft); color: var(--ok); }
+.banner.danger { background: var(--danger-soft); color: var(--danger); border: 1px solid #E57368; }
+.banner strong { display: block; margin-bottom: 4px; }
+.hidden { display: none !important; }
+
+/* ---------- Badge status ---------- */
+.badge {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+}
+.badge.st-menunggu { background: var(--warn-soft); color: var(--warn); }
+.badge.st-proses { background: var(--info-soft); color: var(--info); }
+.badge.st-jadwal { background: var(--primary-soft); color: var(--primary-dark); }
+.badge.st-selesai { background: var(--ok-soft); color: var(--ok); }
+.badge.st-urgent { background: var(--danger-soft); color: var(--danger); }
+
+/* ---------- DASS-21 ---------- */
+.q-item { border-bottom: 1px solid var(--line); padding: 16px 4px; }
+.q-item:last-child { border-bottom: none; }
+.q-item p.q-text { margin: 0 0 10px; font-weight: 600; }
+.q-item p.q-text .no { color: var(--primary); margin-right: 8px; }
+.opt-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt-row label {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px;
+  font-size: 0.86rem; background: #fff;
+}
+.opt-row label:has(input:checked) { background: var(--primary-soft); border-color: var(--primary); font-weight: 600; }
+.opt-row input { accent-color: var(--primary); }
+
+/* ---------- Chat ---------- */
+.chat-shell { max-width: 760px; margin: 0 auto; }
+.chat-box {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); display: flex; flex-direction: column;
+  height: calc(100vh - 300px); min-height: 420px;
+}
+.chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.bubble { max-width: 78%; padding: 12px 16px; border-radius: 16px; font-size: 0.95rem; white-space: pre-wrap; }
+.bubble.bot { align-self: flex-start; background: var(--primary-soft); border-bottom-left-radius: 4px; }
+.bubble.mahasiswa { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+.chat-input { display: flex; gap: 10px; padding: 14px; border-top: 1px solid var(--line); }
+.chat-input textarea { flex: 1; min-height: 48px; max-height: 120px; }
+.chat-footer { text-align: center; color: var(--muted); font-size: 0.82rem; margin-top: 12px; }
+
+/* ---------- Admin ---------- */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.stat-card .num { font-size: 1.7rem; font-weight: 800; color: var(--primary-dark); }
+.stat-card .lbl { color: var(--muted); font-size: 0.85rem; }
+.stat-card.urgent { border-left: 5px solid var(--danger); }
+
+.filter-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+.filter-bar .field { margin-bottom: 0; }
+
+table.data { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+table.data th {
+  text-align: left; background: var(--primary-soft); color: var(--primary-dark);
+  padding: 10px 12px; border-bottom: 2px solid var(--line); white-space: nowrap;
+}
+table.data td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.data tr.rowlink { cursor: pointer; }
+table.data tr.rowlink:hover { background: var(--primary-soft); }
+.score-chip { display: inline-block; min-width: 34px; text-align: center; background: var(--accent-soft); color: var(--accent-dark); border-radius: 8px; padding: 2px 8px; font-weight: 700; font-size: 0.82rem; }
+
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(35, 26, 56, 0.5);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 40px 16px; z-index: 50; overflow-y: auto;
+}
+.modal {
+  background: var(--surface); border-radius: var(--radius); max-width: 860px; width: 100%;
+  padding: 26px; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.modal .close-x { float: right; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--muted); }
+
+.detail-section { border-top: 1px dashed var(--line); margin-top: 18px; padding-top: 14px; }
+.detail-section h4 { margin: 0 0 10px; color: var(--primary-dark); }
+.kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 20px; font-size: 0.92rem; }
+.kv-grid .k { color: var(--muted); }
+.msg-admin { margin-bottom: 10px; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; white-space: pre-wrap; }
+.msg-admin.mahasiswa { background: #F3EFF9; }
+.msg-admin.bot { background: var(--primary-soft); }
+.msg-admin.sistem { background: var(--danger-soft); color: var(--danger); font-weight: 600; }
+.score-cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.score-cards .sc { background: var(--accent-soft); border-radius: 12px; padding: 12px 18px; text-align: center; }
+.score-cards .sc .v { font-size: 1.5rem; font-weight: 800; color: var(--accent-dark); }
+.score-cards .sc .l { font-size: 0.78rem; color: var(--muted); }
+.note-disclaimer { font-size: 0.8rem; color: var(--muted); }
+
+/* ---------- Jadwal mingguan (kalender) ---------- */
+.week-grid {
+  display: grid; grid-template-columns: repeat(7, minmax(148px, 1fr));
+  gap: 8px; margin-top: 16px; overflow-x: auto; padding-bottom: 6px;
+}
+.wk-day {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  min-height: 160px; display: flex; flex-direction: column;
+}
+.wk-day.wk-today { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(107, 70, 168, 0.18); }
+.wk-head {
+  padding: 8px 10px; font-weight: 700; font-size: 0.82rem; color: var(--primary-dark);
+  border-bottom: 1px solid var(--line); background: var(--surface);
+  display: flex; justify-content: space-between; align-items: baseline; gap: 6px;
+  border-radius: 10px 10px 0 0;
+}
+.wk-head .wk-tanggal { color: var(--muted); font-weight: 500; font-size: 0.72rem; white-space: nowrap; }
+.wk-body { padding: 6px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.wk-none { color: var(--muted); font-size: 0.72rem; padding: 4px; }
+.wk-item {
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--muted);
+  border-radius: 8px; padding: 6px 8px; font-size: 0.78rem; cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.wk-item:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.wk-item.urg-darurat { border-left-color: var(--danger); background: var(--danger-soft); }
+.wk-item.urg-tinggi { border-left-color: #E8930C; }
+.wk-item.st-selesai { opacity: 0.65; }
+.wk-item.st-dibatalkan { opacity: 0.5; text-decoration: line-through; }
+.wk-item.st-ditunda { border-style: dashed; }
+.wk-time { font-weight: 700; color: var(--primary-dark); font-size: 0.74rem; }
+.wk-nama { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wk-petugas, .wk-meta { color: var(--muted); font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wk-status { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+.wk-item.urg-darurat .wk-status { color: var(--danger); font-weight: 700; }
+
+/* ---------- Antrean prioritas penjadwalan ---------- */
+.queue-summary {
+  display: flex; gap: 6px 18px; flex-wrap: wrap; padding: 10px 14px;
+  background: var(--primary-soft); border: 1px solid var(--line);
+  border-radius: 10px; margin-bottom: 12px; font-size: 0.9rem;
+}
+.queue-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  border: 1px solid var(--line); border-left: 5px solid var(--muted);
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; background: var(--surface);
+}
+.queue-item.urg-darurat { border-left-color: var(--danger); background: var(--danger-soft); }
+.queue-item.urg-tinggi { border-left-color: #E8930C; }
+.q-title { font-size: 0.95rem; }
+.q-nim { color: var(--muted); font-size: 0.82rem; }
+.q-reason { font-size: 0.85rem; margin-top: 3px; }
+.queue-item.urg-darurat .q-reason { color: var(--danger); font-weight: 600; }
+.q-meta { color: var(--muted); font-size: 0.8rem; margin-top: 3px; }
+.urg-badge-darurat { background: var(--danger); color: #fff; }
+.urg-badge-tinggi { background: #E8930C; color: #fff; }
+.urg-badge-normal { background: var(--muted); color: #fff; }
+.q-act { flex-shrink: 0; }
+
+/* ---------- Jadwal pada modal detail ---------- */
+.jadwal-row {
+  display: flex; justify-content: space-between; gap: 12px; align-items: center;
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px;
+  margin-bottom: 6px; font-size: 0.9rem;
+}
+.jadwal-row.st-dibatalkan { opacity: 0.55; }
+.jadwal-act { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.jadwal-list { margin-bottom: 4px; }
+.sc-urgensi { padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; margin: 0 0 10px; }
+.sc-urgensi.urg-darurat { background: var(--danger-soft); color: var(--danger); border: 1px solid #E57368; }
+.sc-urgensi.urg-tinggi { background: var(--warn-soft); color: var(--warn); border: 1px solid #E8930C; }
+.sched-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.sched-row .field { flex: 1 1 120px; }
+
+/* ---------- Footer ---------- */
+.site-footer { background: var(--surface); border-top: 1px solid var(--line); margin-top: auto; }
+.site-footer .inner {
+  width: min(1080px, 94%); margin: 0 auto; padding: 18px 0;
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  color: var(--muted); font-size: 0.85rem;
+}
+.site-footer a { color: var(--primary-dark); }
+
+/* ---------- Responsif ---------- */
+@media (max-width: 640px) {
+  .hero { padding: 28px 22px; }
+  .chat-box { height: calc(100vh - 340px); }
+  .bubble { max-width: 90%; }
+}

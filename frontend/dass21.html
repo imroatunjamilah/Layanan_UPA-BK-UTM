@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skrining DASS-21 - UPA BK UTM</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=2">
+  <link rel="icon" type="image/jpeg" href="/static/img/logo.jpg">
+</head>
+<body>
+  <header class="site-header">
+    <div class="inner">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/img/logo.jpg" alt="Logo UPA BK UTM">
+        <div><strong>UPA BK UTM</strong><span>Skrining DASS-21</span></div>
+      </a>
+      <nav class="top-nav"><a href="/">Beranda</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="chat-shell">
+      <div id="need-register" class="card hidden">
+        <div class="banner warn">
+          <strong>Silakan daftar terlebih dahulu.</strong> Skrining terhubung dengan pendaftaran layanan Anda.
+        </div>
+        <a class="btn" href="/registrasi.html">Menuju Halaman Pendaftaran</a>
+      </div>
+
+      <div id="quiz-wrapper" class="hidden">
+        <h2 class="section">Skrining DASS-21</h2>
+        <p class="sub" id="intro-text"></p>
+
+        <div class="banner info">
+          <strong>Privasi Anda dijaga.</strong>
+          Hasil skrining tidak ditampilkan kepada mahasiswa - hanya ditinjau oleh petugas UPA BK.
+        </div>
+
+        <div id="error-banner" class="banner danger hidden"></div>
+
+        <form id="quiz-form" class="card">
+          <div id="questions"></div>
+          <div class="actions-row">
+            <button type="submit" class="btn" id="submit-btn">Kirim Jawaban Skrining</button>
+          </div>
+        </form>
+
+        <div id="done-panel" class="card hidden">
+          <div class="banner ok">
+            <strong>Terima kasih!</strong> Jawaban skrining Anda telah tersimpan dan akan
+            ditinjau oleh petugas UPA BK. Sesuai kebijakan layanan, hasil tidak ditampilkan
+            kepada mahasiswa.
+          </div>
+          <p>Anda sekarang dapat melanjutkan ke ruang obrolan untuk bercerita lebih lanjut.</p>
+          <div class="actions-row">
+            <a class="btn" href="/chatbot.html">Lanjut ke Ruang Obrolan</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner"><div>UPA BK UTM - Layanan Konseling Mahasiswa (prototipe pengembangan)</div></div>
+  </footer>
+
+  <script src="/static/js/dass21.js"></script>
+</body>
+</html>

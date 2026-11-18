@@ -1,0 +1,8 @@
+# Dependensi RUNTIME aplikasi (wajib untuk menjalankan aplikasi).
+# Tidak ada pytest di sini -> aplikasi jalan tanpa alat pengujian.
+fastapi>=0.110
+uvicorn[standard]>=0.29
+SQLAlchemy>=2.0
+pydantic>=2.6
+python-dotenv>=1.0
+httpx>=0.27

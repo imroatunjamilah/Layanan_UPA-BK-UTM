@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Petugas - UPA BK UTM</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=2">
+  <link rel="icon" type="image/jpeg" href="/static/img/logo.jpg">
+</head>
+<body>
+  <header class="site-header">
+    <div class="inner">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/img/logo.jpg" alt="Logo UPA BK UTM">
+        <div><strong>UPA BK UTM</strong><span>Akses Petugas/Admin</span></div>
+      </a>
+      <nav class="top-nav"><a href="/">Beranda</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="chat-shell" style="max-width:460px;">
+      <h2 class="section">Masuk Petugas/Admin</h2>
+      <p class="sub">Halaman ini hanya untuk petugas UPA BK yang berwenang.</p>
+
+      <div id="error-banner" class="banner danger hidden"></div>
+
+      <form id="login-form" class="card" novalidate>
+        <div class="field">
+          <label for="username">Username</label>
+          <input type="text" id="username" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" autocomplete="current-password" required>
+        </div>
+        <div class="actions-row">
+          <button type="submit" class="btn" id="login-btn">Masuk</button>
+        </div>
+        <p style="margin:12px 0 0;text-align:center;">
+          <a href="#" id="forgot-link">Lupa kata sandi?</a>
+        </p>
+      </form>
+
+      <!-- ===================== Reset sandi via OTP WhatsApp ===================== -->
+      <div id="reset-panel" class="card hidden" style="margin-top:16px;">
+        <h3 style="margin:0 0 6px;">Reset Kata Sandi</h3>
+        <p class="sub">
+          Kode verifikasi akan dikirim melalui WhatsApp ke nomor yang terdaftar
+          pada akun Anda. Hubungi administrator utama bila nomor Anda belum terdaftar.
+        </p>
+
+        <div id="reset-step1">
+          <div class="field">
+            <label for="r-username">Username</label>
+            <input type="text" id="r-username" autocomplete="username">
+          </div>
+          <div class="actions-row">
+            <button type="button" class="btn" id="r-send">Kirim kode via WhatsApp</button>
+          </div>
+        </div>
+
+        <div id="reset-step2" class="hidden">
+          <div id="r-devcode" class="form-msg" aria-live="polite"></div>
+          <div class="field">
+            <label for="r-kode">Kode verifikasi (6 digit)</label>
+            <input type="text" id="r-kode" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+          </div>
+          <div class="field">
+            <label for="r-pass">Kata sandi baru (min. 8 karakter)</label>
+            <input type="password" id="r-pass" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label for="r-pass2">Ulangi kata sandi baru</label>
+            <input type="password" id="r-pass2" autocomplete="new-password">
+          </div>
+          <div class="actions-row">
+            <button type="button" class="btn" id="r-save">Simpan kata sandi baru</button>
+          </div>
+        </div>
+
+        <p id="r-msg" class="form-msg" aria-live="polite"></p>
+        <p style="margin:12px 0 0;text-align:center;"><a href="#" id="r-back">Kembali ke form login</a></p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner"><div>UPA BK UTM - Layanan Konseling Mahasiswa (prototipe pengembangan)</div></div>
+  </footer>
+
+  <script>
+    // Jika sudah login, langsung ke dashboard.
+    if (localStorage.getItem("upa_admin_token")) { location.href = "/admin-dashboard.html"; }
+
+    // ---------- util pesan form (mencolok: merah gagal / hijau sukses) ----------
+    function setMsg(el, text, type) {
+      if (!el) return;
+      el.textContent = text;
+      el.className = "form-msg show " + (type || "info");
+    }
+    function clearMsg(el) { if (el) { el.textContent = ""; el.className = "form-msg"; } }
+
+    // ---------- login ----------
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const banner = document.getElementById("error-banner");
+      banner.classList.add("hidden");
+      const btn = document.getElementById("login-btn");
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: document.getElementById("username").value.trim(),
+            password: document.getElementById("password").value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) { throw new Error(data.detail || "Login gagal."); }
+        localStorage.setItem("upa_admin_token", data.access_token);
+        localStorage.setItem("upa_admin_name", data.username);
+        location.href = "/admin-dashboard.html";
+      } catch (err) {
+        banner.textContent = err.message;
+        banner.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ---------- lupa kata sandi (OTP via WhatsApp) ----------
+    const resetPanel = document.getElementById("reset-panel");
+    const step1 = document.getElementById("reset-step1");
+    const step2 = document.getElementById("reset-step2");
+    const rMsg = document.getElementById("r-msg");
+    const rDev = document.getElementById("r-devcode");
+    let resetUsername = "";
+
+    document.getElementById("forgot-link").addEventListener("click", (e) => {
+      e.preventDefault();
+      resetPanel.classList.remove("hidden");
+      step1.classList.remove("hidden");
+      step2.classList.add("hidden");
+      clearMsg(rMsg); clearMsg(rDev);
+      document.getElementById("r-username").focus();
+    });
+
+    document.getElementById("r-back").addEventListener("click", (e) => {
+      e.preventDefault();
+      resetPanel.classList.add("hidden");
+      step1.classList.remove("hidden");
+      step2.classList.add("hidden");
+      clearMsg(rMsg); clearMsg(rDev);
+    });
+
+    // Langkah 1: minta kode OTP.
+    document.getElementById("r-send").addEventListener("click", async () => {
+      const btn = document.getElementById("r-send");
+      const username = document.getElementById("r-username").value.trim();
+      clearMsg(rMsg); clearMsg(rDev);
+      if (!username) { setMsg(rMsg, "Isi dulu username akun Anda.", "err"); return; }
+      btn.disabled = true;
+      setMsg(rMsg, "Mengirim kode ke WhatsApp terdaftar...", "info");
+      try {
+        const res = await fetch("/api/admin/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username }),
+        });
+        const data = await res.json();
+        if (!res.ok) { throw new Error(data.detail || "Gagal mengirim kode."); }
+        setMsg(rMsg, data.pesan || "Kode telah dikirim.", "ok");
+        resetUsername = username;
+        if (data.debug_code) {
+          // HANYA muncul pada mode pengembangan (belum ada gateway WhatsApp).
+          setMsg(rDev, "Mode pengembangan (tanpa gateway WA) - kode Anda: " + data.debug_code, "info");
+        }
+        step1.classList.add("hidden");
+        step2.classList.remove("hidden");
+        document.getElementById("r-kode").focus();
+      } catch (err) {
+        setMsg(rMsg, "Gagal: " + err.message, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Langkah 2: verifikasi kode + sandi baru.
+    document.getElementById("r-save").addEventListener("click", async () => {
+      const btn = document.getElementById("r-save");
+      const kode = document.getElementById("r-kode").value.trim();
+      const p1 = document.getElementById("r-pass").value;
+      const p2 = document.getElementById("r-pass2").value;
+      clearMsg(rMsg);
+      if (!/^[0-9]{6}$/.test(kode)) { setMsg(rMsg, "Kode verifikasi harus 6 angka.", "err"); return; }
+      if (p1.length < 8) { setMsg(rMsg, "Kata sandi baru minimal 8 karakter.", "err"); return; }
+      if (p1 !== p2) { setMsg(rMsg, "Ulangi kata sandi tidak sama.", "err"); return; }
+      btn.disabled = true;
+      setMsg(rMsg, "Menyimpan kata sandi baru...", "info");
+      try {
+        const res = await fetch("/api/admin/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: resetUsername, kode, password_baru: p1 }),
+        });
+        const data = await res.json();
+        if (!res.ok) { throw new Error(data.detail || "Gagal menyimpan."); }
+        setMsg(rMsg, data.pesan || "Kata sandi berhasil diubah. Silakan login.", "ok");
+        document.getElementById("username").value = resetUsername;
+        setTimeout(() => {
+          resetPanel.classList.add("hidden");
+          step1.classList.remove("hidden");
+          step2.classList.add("hidden");
+          clearMsg(rMsg); clearMsg(rDev);
+          document.getElementById("password").focus();
+        }, 1800);
+      } catch (err) {
+        setMsg(rMsg, "Gagal: " + err.message, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

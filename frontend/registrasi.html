@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pendaftaran Layanan - UPA BK UTM</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=2">
+  <link rel="icon" type="image/jpeg" href="/static/img/logo.jpg">
+</head>
+<body>
+  <header class="site-header">
+    <div class="inner">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/img/logo.jpg" alt="Logo UPA BK UTM">
+        <div><strong>UPA BK UTM</strong><span>Pendaftaran Layanan Konseling</span></div>
+      </a>
+      <nav class="top-nav"><a href="/">Beranda</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="chat-shell">
+      <h2 class="section">Formulir Pendaftaran Layanan</h2>
+      <p class="sub">
+        Isi data berikut untuk mendaftarkan diri. Preferensi hari/waktu hanyalah
+        preferensi awal - jadwal final akan dikonfirmasi terpisah oleh petugas UPA BK.
+      </p>
+
+      <div id="error-banner" class="banner danger hidden"></div>
+
+      <form id="reg-form" class="card" novalidate>
+        <div class="field">
+          <label for="nama">Nama Lengkap</label>
+          <input type="text" id="nama" name="nama" maxlength="120" required>
+        </div>
+        <div class="field">
+          <label for="nim">NIM</label>
+          <input type="text" id="nim" name="nim" maxlength="30" required>
+        </div>
+        <div class="field">
+          <label for="kontak">Kontak <span class="hint">(No. HP/WhatsApp atau email)</span></label>
+          <input type="text" id="kontak" name="kontak" maxlength="120" required>
+        </div>
+        <div class="field">
+          <label for="jenis_layanan">Jenis Layanan yang Dibutuhkan</label>
+          <select id="jenis_layanan" name="jenis_layanan" required></select>
+        </div>
+        <div class="field">
+          <label for="preferensi_hari">Preferensi Hari <span class="hint">(bukan jadwal terkonfirmasi)</span></label>
+          <select id="preferensi_hari" name="preferensi_hari" required></select>
+        </div>
+        <div class="field">
+          <label for="preferensi_waktu">Preferensi Waktu</label>
+          <select id="preferensi_waktu" name="preferensi_waktu" required></select>
+        </div>
+        <div class="field">
+          <label for="keluhan">Keluhan/Gangguan yang Dialami <span class="hint">(opsional)</span></label>
+          <textarea id="keluhan" name="keluhan" maxlength="4000"
+            placeholder="Tuliskan secara singkat apa yang sedang Anda alami (jika ingin)"></textarea>
+        </div>
+
+        <div class="field">
+          <div class="checkbox-row">
+            <input type="checkbox" id="setuju" required>
+            <label for="setuju">
+              Saya memahami dan menyetujui bahwa data pendaftaran, hasil skrining, dan catatan
+              layanan saya disimpan oleh UPA BK UTM serta hanya dapat diakses oleh petugas
+              berwenang untuk keperluan layanan konseling. Saya memahami bahwa layanan ini
+              tidak menggantikan diagnosis medis/psikologis.
+            </label>
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button type="submit" class="btn" id="submit-btn">Kirim Pendaftaran</button>
+          <a class="btn ghost" href="/">Batal</a>
+        </div>
+      </form>
+
+      <div id="success-panel" class="card hidden">
+        <div class="banner ok"><strong>Pendaftaran berhasil!</strong> Data Anda telah tersimpan dan akan ditinjau oleh petugas UPA BK.</div>
+        <p>
+          Langkah berikutnya: mengisi skrining DASS-21 (21 pernyataan singkat).
+          Skrining membantu petugas memahami kondisi Anda lebih baik.
+        </p>
+        <div class="actions-row">
+          <a class="btn" id="next-dass" href="/dass21.html">Lanjut ke Skrining DASS-21</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner"><div>UPA BK UTM - Layanan Konseling Mahasiswa (prototipe pengembangan)</div></div>
+  </footer>
+
+  <script src="/static/js/registrasi.js"></script>
+</body>
+</html>

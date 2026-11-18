@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin - UPA BK UTM</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=3">
+  <link rel="icon" type="image/jpeg" href="/static/img/logo.jpg">
+</head>
+<body>
+  <header class="site-header">
+    <div class="inner">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/img/logo.jpg" alt="Logo UPA BK UTM">
+        <div><strong>UPA BK UTM</strong><span>Dashboard Admin</span></div>
+      </a>
+      <nav class="top-nav">
+        <span id="admin-name" style="align-self:center;color:var(--muted);font-size:0.9rem;"></span>
+        <button class="btn ghost small" id="logout-btn">Keluar</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================== Statistik ===================== -->
+    <section>
+      <h2 class="section">Ringkasan Layanan</h2>
+      <p class="sub">Statistik agregat pendaftaran, skrining, dan obrolan.</p>
+      <div class="stats-grid" id="stats-grid"></div>
+    </section>
+
+    <!-- ===================== Jadwal Mingguan ===================== -->
+    <section class="card" id="sec-jadwal">
+      <h2 class="section">Jadwal Konseling Mingguan</h2>
+      <p class="sub">
+        Sesi konseling yang sudah dikonfirmasi (bukan preferensi awal mahasiswa).
+        Penanganan darurat diprioritaskan pada antrean di bawah, namun keputusan
+        menugaskan konselor tetap di tangan admin.
+      </p>
+      <div class="filter-bar">
+        <div class="field" style="align-self:end;">
+          <button class="btn ghost small" id="wk-prev">&larr; Minggu lalu</button>
+        </div>
+        <div class="field" style="align-self:end;">
+          <button class="btn ghost small" id="wk-today">Minggu ini</button>
+        </div>
+        <div class="field" style="align-self:end;">
+          <button class="btn ghost small" id="wk-next">Minggu depan &rarr;</button>
+        </div>
+        <div class="field">
+          <label for="wk-petugas">Filter konselor</label>
+          <select id="wk-petugas"><option value="">Semua konselor</option></select>
+        </div>
+        <div class="field" style="flex:2 1 220px;">
+          <label>Rentang minggu (WIB)</label>
+          <div id="wk-label" style="font-weight:600;color:var(--primary-dark);padding:10px 0;">-</div>
+        </div>
+      </div>
+      <div id="week-grid" class="week-grid" aria-live="polite"></div>
+      <p id="wk-empty" class="sub hidden" style="margin-top:10px;">
+        Belum ada sesi pada minggu ini. Gunakan antrean prioritas di bawah untuk menjadwalkan.
+      </p>
+    </section>
+
+    <!-- ===================== Antrean prioritas penjadwalan ===================== -->
+    <section class="card" id="sec-antrean">
+      <h2 class="section">Antrean Prioritas Penjadwalan</h2>
+      <p class="sub">
+        Kasus darurat (eskalasi krisis) otomatis tampil paling atas, disusul kasus
+        dengan skrining DASS-21 kategori berat, lalu yang paling lama menunggu.
+        Sistem hanya MENUSULKAN urutan - pemilihan konselor dan slot tetap ditentukan admin.
+      </p>
+      <div class="queue-summary" id="queue-summary"></div>
+      <div id="queue-list"></div>
+      <p id="queue-empty" class="sub hidden" style="margin-top:10px;">
+      Tidak ada kasus yang menunggu penjadwalan. Bagus!
+      </p>
+    </section>
+
+    <!-- ===================== Filter & tabel ===================== -->
+    <section class="card">
+      <h2 class="section">Antrean Tindak Lanjut Mahasiswa</h2>
+      <p class="sub">Diurutkan berdasarkan prioritas (eskalasi paling atas). Klik baris untuk melihat detail.</p>
+
+      <div class="filter-bar">
+        <div class="field">
+          <label for="f-search">Cari nama/NIM</label>
+          <input type="text" id="f-search" placeholder="mis. Andi / 2101101">
+        </div>
+        <div class="field">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option value="">Semua status</option>
+            <option value="perlu_ditinjau_segera">Perlu Ditinjau Segera</option>
+            <option value="menunggu_ditinjau">Menunggu Ditinjau</option>
+            <option value="sedang_diproses">Sedang Diproses</option>
+            <option value="dijadwalkan">Dijadwalkan</option>
+            <option value="selesai">Selesai</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-layanan">Jenis layanan</label>
+          <select id="f-layanan"><option value="">Semua layanan</option></select>
+        </div>
+        <div class="field">
+          <label for="f-petugas">Petugas penangani</label>
+          <select id="f-petugas">
+            <option value="">Semua penangan</option>
+            <option value="tanpa">Belum ada penangani</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-from">Dari tanggal</label>
+          <input type="date" id="f-from">
+        </div>
+        <div class="field">
+          <label for="f-to">Sampai tanggal</label>
+          <input type="date" id="f-to">
+        </div>
+        <div class="field">
+          <label for="f-sort">Urutkan</label>
+          <select id="f-sort">
+            <option value="priority">Prioritas</option>
+            <option value="terbaru">Terbaru</option>
+            <option value="terlama">Terlama</option>
+          </select>
+        </div>
+        <div class="field">
+          <button class="btn small" id="apply-btn" style="width:100%;">Terapkan</button>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;margin-top:16px;">
+        <table class="data" id="reg-table">
+          <thead>
+            <tr>
+              <th>Nama</th><th>NIM</th><th>Layanan</th><th>Preferensi</th>
+              <th>Status</th><th>Petugas</th><th>Skor D/A/S</th><th>Tanggal Daftar</th>
+            </tr>
+          </thead>
+          <tbody id="reg-tbody"></tbody>
+        </table>
+      </div>
+      <p id="reg-empty" class="sub hidden" style="margin-top:12px;">Tidak ada data yang cocok dengan filter.</p>
+      <div class="actions-row">
+        <button class="btn ghost small" id="prev-btn">&larr; Sebelumnya</button>
+        <span id="page-info" style="align-self:center;color:var(--muted);font-size:0.9rem;"></span>
+        <button class="btn ghost small" id="next-btn">Selanjutnya &rarr;</button>
+      </div>
+    </section>
+
+    <!-- ===================== Kelola petugas ===================== -->
+    <section class="card">
+      <h2 class="section">Petugas Penangani</h2>
+      <p class="sub">
+        Direktori staf/konselor yang dapat ditugaskan sebagai penanggung jawab kasus.
+        Ini bukan akun login - hanya daftar nama untuk menandai siapa yang menangani.
+      </p>
+      <div class="filter-bar">
+        <div class="field">
+          <label for="p-nama">Nama petugas</label>
+          <input type="text" id="p-nama" placeholder="mis. Ratna Wulandari, M.Psi">
+        </div>
+        <div class="field">
+          <label for="p-peran">Peran</label>
+          <input type="text" id="p-peran" placeholder="Konselor / Psikolog / Parapiawai">
+        </div>
+        <div class="field">
+          <label for="p-kontak">Kontak (opsional)</label>
+          <input type="text" id="p-kontak" placeholder="email / WhatsApp">
+        </div>
+        <div class="field">
+          <button class="btn small" id="p-add" style="width:100%;">+ Tambah Petugas</button>
+        </div>
+      </div>
+      <p id="p-msg" class="form-msg" role="status" aria-live="polite"></p>
+      <div style="overflow-x:auto;margin-top:12px;">
+        <table class="data" id="petugas-table">
+          <thead>
+            <tr><th>Nama</th><th>Peran</th><th>Kontak</th><th>Kasus</th><th>Status</th><th>Aksi</th></tr>
+          </thead>
+          <tbody id="petugas-tbody"></tbody>
+        </table>
+      </div>
+      <p id="petugas-empty" class="sub hidden" style="margin-top:12px;">
+        Belum ada petugas. Tambahkan nama staf di atas, lalu tugaskan pada tiap kasus.
+      </p>
+    </section>
+
+    <!-- ===================== Manajemen akun admin ===================== -->
+    <section class="card">
+      <h2 class="section">Manajemen Akun Admin</h2>
+      <p class="sub">
+        Tentukan siapa yang boleh login (aktifkan/nonaktifkan), lengkapi profil
+        (nama, NIM, fakultas), catat nomor WhatsApp untuk reset sandi, dan atur
+        masa aktif akun. Akun nonaktif/kedaluwarsa langsung tidak bisa masuk.
+      </p>
+      <div class="filter-bar">
+        <div class="field">
+          <label for="a-username">Username</label>
+          <input type="text" id="a-username" placeholder="mis. konselor01">
+        </div>
+        <div class="field">
+          <label for="a-pass">Kata sandi awal (min. 8)</label>
+          <input type="text" id="a-pass" placeholder="sandi kuat">
+        </div>
+        <div class="field">
+          <label for="a-nama">Nama lengkap</label>
+          <input type="text" id="a-nama" placeholder="mis. Dewi Lestari, S.Psi">
+        </div>
+        <div class="field">
+          <label for="a-nim">NIM</label>
+          <input type="text" id="a-nim" placeholder="mis. 2101101999">
+        </div>
+        <div class="field">
+          <label for="a-fak">Fakultas</label>
+          <input type="text" id="a-fak" placeholder="mis. Fakultas Psikologi">
+        </div>
+        <div class="field">
+          <label for="a-wa">No. WhatsApp</label>
+          <input type="text" id="a-wa" placeholder="08123456789">
+        </div>
+        <div class="field">
+          <label for="a-masa">Masa aktif s.d. (opsional)</label>
+          <input type="date" id="a-masa">
+        </div>
+        <div class="field">
+          <button class="btn small" id="a-add" style="width:100%;">+ Tambah Admin</button>
+        </div>
+      </div>
+      <p id="a-msg" class="form-msg" role="status" aria-live="polite"></p>
+      <div style="overflow-x:auto;margin-top:12px;">
+        <table class="data" id="admins-table">
+          <thead>
+            <tr>
+              <th>Username</th><th>Nama</th><th>NIM</th><th>Fakultas</th>
+              <th>No. WhatsApp</th><th>Masa Aktif</th><th>Status</th><th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="admins-tbody"></tbody>
+        </table>
+      </div>
+      <p id="admins-empty" class="sub hidden" style="margin-top:12px;">
+        Belum ada akun admin lain.
+      </p>
+    </section>
+
+    <!-- ===================== Ekspor ===================== -->
+    <section class="card">
+      <h2 class="section">Ekspor Data</h2>
+      <p class="sub">
+        Ekspor terbatas: versi standar tanpa kolom sensitif. Versi lengkap (keluhan + skor
+        DASS-21) memerlukan konfirmasi dan setiap ekspor dicatat pada log audit.
+      </p>
+      <div class="actions-row">
+        <button class="btn small" id="export-basic">Ekspor CSV (standar)</button>
+        <button class="btn danger small" id="export-sensitive">Ekspor CSV (termasuk data sensitif)</button>
+      </div>
+      <div id="confirm-sensitive" class="card hidden" style="margin-top:14px;background:var(--danger-soft);border-color:#E57368;">
+        <p style="margin:0 0 12px;">
+          <strong>Konfirmasi:</strong> ekspor ini memuat keluhan dan skor DASS-21 (data sensitif).
+          Pastikan penggunaannya sesuai kebijakan privasi UPA BK. Lanjutkan?
+        </p>
+        <div class="actions-row" style="margin-top:0;">
+          <button class="btn danger small" id="export-yes">Ya, lanjutkan ekspor</button>
+          <button class="btn ghost small" id="export-no">Batal</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== Modal detail ===================== -->
+  <div class="modal-backdrop hidden" id="detail-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="close-x" id="detail-close" aria-label="Tutup">&times;</button>
+      <h3 id="detail-title" style="margin-top:0;"></h3>
+      <div id="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ===================== Modal penjadwalan ===================== -->
+  <div class="modal-backdrop hidden" id="sched-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="close-x" id="sched-close" aria-label="Tutup">&times;</button>
+      <h3 style="margin-top:0;">Jadwalkan Sesi Konseling</h3>
+      <p class="sub" id="sc-kasus" style="margin-top:-6px;"></p>
+      <div id="sc-urgensi"></div>
+      <div class="field">
+        <label for="sc-petugas">Konselor penanggung jawab (wajib)</label>
+        <select id="sc-petugas"></select>
+      </div>
+      <div class="sched-row">
+        <div class="field">
+          <label for="sc-tanggal">Tanggal (WIB)</label>
+          <input type="date" id="sc-tanggal">
+        </div>
+        <div class="field">
+          <label for="sc-jam">Jam mulai (WIB)</label>
+          <select id="sc-jam"></select>
+        </div>
+        <div class="field">
+          <label for="sc-durasi">Durasi</label>
+          <select id="sc-durasi">
+            <option value="30">30 menit</option>
+            <option value="60" selected>60 menit</option>
+            <option value="90">90 menit</option>
+            <option value="120">120 menit</option>
+          </select>
+        </div>
+      </div>
+      <div class="sched-row">
+        <div class="field">
+          <label for="sc-metode">Metode</label>
+          <select id="sc-metode">
+            <option>Tatap Muka</option>
+            <option>Online</option>
+            <option>Lainnya</option>
+          </select>
+        </div>
+        <div class="field" style="flex:2 1 160px;">
+          <label for="sc-lokasi">Lokasi / tautan (opsional)</label>
+          <input type="text" id="sc-lokasi" placeholder="mis. Ruang BK 2 / meet.google.com/...">
+        </div>
+      </div>
+      <div class="field">
+        <label for="sc-catatan">Catatan (opsional)</label>
+        <textarea id="sc-catatan" placeholder="mis. sesi pertama, fokus pada manajemen kecemasan"></textarea>
+      </div>
+      <p id="sc-msg" class="form-msg" role="status" aria-live="polite"></p>
+      <div class="actions-row">
+        <button class="btn" id="sc-save">Simpan jadwal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Modal edit akun admin ===================== -->
+  <div class="modal-backdrop hidden" id="admin-edit-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="close-x" id="admin-edit-close" aria-label="Tutup">&times;</button>
+      <h3 style="margin-top:0;">Edit Akun Admin</h3>
+      <p class="sub" id="ae-username" style="margin-top:-6px;"></p>
+      <div class="field">
+        <label for="ae-nama">Nama lengkap</label>
+        <input type="text" id="ae-nama">
+      </div>
+      <div class="field">
+        <label for="ae-nim">NIM</label>
+        <input type="text" id="ae-nim">
+      </div>
+      <div class="field">
+        <label for="ae-fak">Fakultas</label>
+        <input type="text" id="ae-fak">
+      </div>
+      <div class="field">
+        <label for="ae-wa">No. WhatsApp (untuk OTP reset sandi)</label>
+        <input type="text" id="ae-wa">
+      </div>
+      <div class="field">
+        <label for="ae-masa">Masa aktif s.d. (kosongkan = selamanya)</label>
+        <input type="date" id="ae-masa">
+      </div>
+      <p id="ae-msg" class="form-msg" aria-live="polite"></p>
+      <div class="actions-row">
+        <button class="btn" id="ae-save">Simpan perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="inner"><div>UPA BK UTM - Dashboard Admin (prototipe pengembangan)</div></div>
+  </footer>
+
+  <script src="/static/js/admin.js?v=4"></script>
+</body>
+</html>
